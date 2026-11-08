@@ -8,17 +8,30 @@ My agent skills (Claude Code and compatible agents). Each skill is a folder in `
 
 ## Install a skill
 
-Clone the repo and copy the skill folder into your `.claude/skills` folder:
+Clone the repo, then put the skill folder in your `.claude/skills` folder. There are two ways: copy it, or link it.
 
 ```bash
 git clone https://github.com/saliougaye/bagz.git
 mkdir -p ~/.claude/skills
+```
+
+**Copy.** A snapshot: the installed skill does not change until you copy it again.
+
+```bash
 cp -R bagz/skills/bro-explain ~/.claude/skills/
 ```
 
-`~/.claude/skills/` makes the skill available in every project. To use it in one project only, copy it into that project's `.claude/skills/` instead.
+**Symlink.** The installed skill is the folder in the clone, so `git pull` updates it with no extra step.
 
-To update, pull the repo and copy the folder again.
+```bash
+ln -s "$(pwd)/bagz/skills/bro-explain" ~/.claude/skills/bro-explain
+```
+
+Do not move or delete the clone while the link is in use.
+
+`~/.claude/skills/` makes the skill available in every project. To use it in one project only, use that project's `.claude/skills/` instead.
+
+To update a copy, pull the repo and copy the folder again (replace the old one first). A symlink only needs `git pull`.
 
 Then run `/bro-explain`, or just ask for a guide: the skill triggers on its own.
 
