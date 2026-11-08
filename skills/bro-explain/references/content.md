@@ -36,6 +36,7 @@ ${contentsIndex()}`
 };
 ```
 
+- The home page can have any id (`inizio`, `introduction`…): the engine finds it through `home: true`, and opens it for `index.html` with no hash or an unknown one.
 - `body` is a function returning an HTML string (a template literal). It runs at render time and for the search index.
 - Every `h2`/`h3` needs a unique `id` within the page. Only direct children of the body count for "On this page".
 - Text inside the template literal is HTML: escape `<`, `>` and `&` in prose and code (`&lt;`), and never write `</script` (use `<\/script`).

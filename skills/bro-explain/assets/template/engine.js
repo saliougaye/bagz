@@ -391,7 +391,9 @@ document.addEventListener('click', async e => {
 /* =====================================================================
    ROUTER
    ===================================================================== */
-const parseRoute = () => { const [p, s] = location.hash.replace(/^#\/?/, '').split('/'); return { page: PAGES[p] ? p : 'introduction', sec: s || null }; };
+const HOME = Object.keys(PAGES).find(k => PAGES[k].home) || FLAT[0];
+const parseRoute = () => { const [p, s] = location.hash.replace(/^#\/?/, '').split('/'); return { page: PAGES[p] ? p : HOME, sec: s || null }; };
+$('.brand').setAttribute('href', `#/${HOME}`);
 function render(page, sec, { first = false, keepSpy = null } = {}) {
   const changed = page !== state.page;
   state.page = page; state.spy = null; tocMoved = false;
