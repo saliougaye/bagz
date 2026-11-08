@@ -4,7 +4,8 @@ My agent skills (Claude Code and compatible agents). Each skill is a folder in `
 
 | Skill | What it does | Use it when |
 |---|---|---|
-| [`bro-explain`](skills/bro-explain/SKILL.md) | Turns a topic or a decision to analyse into a self-contained, offline HTML guide in my house style: sidebar with search, plain-language sections, interactive diagrams, charts, light/dark theme. | "guide", "explainer", "explain X", "walk me through", "analyse", "should I…", "which is better", "HTML doc", "page to present", "fammi una guida", "spiegami", "analizza" |
+| [`bro-explain`](skills/bro-explain/SKILL.md) | Turns a topic or a decision to analyse into a self-contained, offline HTML guide in my house style: sidebar with search, plain-language sections, interactive diagrams, charts, light/dark theme. | "guide", "explainer", "explain X", "walk me through", "analyse", "should I…", "which is better", "HTML doc", "page to present" |
+| [`swag-it-out`](skills/swag-it-out/SKILL.md) | Proposes an HTML mockup of a UI for a project or a feature, with several variants to compare. Builds the variants itself and calls my usual design skills: `design-taste-frontend`, `better-ui`, `emil-design-eng`, and `web-design-engineer` for web projects. | "mockup", "mock up the UI", "propose a UI for…", "how could this screen look" |
 
 ## Install a skill
 
@@ -27,7 +28,7 @@ cp -R bagz/skills/bro-explain ~/.claude/skills/
 ln -s "$(pwd)/bagz/skills/bro-explain" ~/.claude/skills/bro-explain
 ```
 
-Do not move or delete the clone while the link is in use.
+Do not move or delete the clone while the link is in use. Replace `bro-explain` with `swag-it-out` to install the other skill.
 
 `~/.claude/skills/` makes the skill available in every project. To use it in one project only, use that project's `.claude/skills/` instead.
 
@@ -40,6 +41,7 @@ Then run `/bro-explain`, or just ask for a guide: the skill triggers on its own.
 | Skill | Needs |
 |---|---|
 | `bro-explain` | Python 3 (build), Node 22+ and Google Chrome (checks only; set `CHROME=/path/to/chrome` if it is not in the default place) |
+| `swag-it-out` | The design skills it calls (`design-taste-frontend`, `better-ui`, `emil-design-eng`, `web-design-engineer`) installed in the same environment; it keeps going without any that are missing |
 
 The guides themselves need only a browser: they work offline from `file://`.
 
