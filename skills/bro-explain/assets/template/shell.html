@@ -1,0 +1,41 @@
+<a class="skip" href="#main" id="skip">{{skipToContent}}</a>
+<div class="shell">
+  <div class="side" id="side">
+    <header class="mast" id="mast">
+      <button type="button" class="nav-open" id="nav-open" aria-expanded="false" aria-controls="nav"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="lbl">{{menu}}</span></button>
+      <div class="mast-row">
+        <a class="brand" href="#/introduction"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="mk-a" x="2" y="2" width="9" height="9" rx="2"/><rect class="mk-b" x="13.8" y="13.8" width="8.4" height="8.4" rx="2"/><path class="mk-b" d="M6.5 11v6.5h7.3"/></svg><span>{{guideTitle}}</span></a>
+        <button type="button" class="icon-btn side-tog" id="side-tog" aria-controls="nav" aria-expanded="true" aria-label="{{hideSidebar}}" aria-keyshortcuts="[" title="{{hideSidebar}} ( [ )"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></svg></button>
+      </div>
+      <button type="button" class="search-btn" id="search-open" aria-label="{{searchGuide}}" aria-keyshortcuts="Meta+K Control+K"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span class="lbl">{{search}}</span><span class="kbd" aria-hidden="true"><kbd id="kbd-mod">Ctrl</kbd><kbd>K</kbd></span></button>
+      <button type="button" class="icon-btn theme-bar" role="switch" aria-checked="false" aria-label="{{darkMode}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+    </header>
+    <div class="nav-backdrop" id="nav-backdrop"></div>
+    <nav class="nav" id="nav" aria-label="{{guideContents}}">
+      <div class="nav-head"><span>{{contents}}</span><button type="button" class="nav-close" id="nav-close"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>{{close}}</button></div>
+      <div class="nav-tree" id="nav-tree"></div>
+    </nav>
+    <div class="side-foot"><button type="button" class="theme-btn" role="switch" aria-checked="false" aria-label="{{darkMode}}" title="{{darkMode}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span class="lbl" aria-hidden="true">{{darkMode}}</span><span class="sw" aria-hidden="true"></span></button></div>
+  </div>
+  <div class="sheet">
+    <main id="main" tabindex="-1"></main>
+    <aside class="toc" id="toc" aria-label="{{onThisPage}}"></aside>
+  </div>
+</div>
+<p class="sr" role="status" aria-live="polite" id="status"></p>
+<noscript><p style="padding:24px">{{noscript}}</p></noscript>
+
+<dialog class="find" id="find" aria-label="{{searchGuide}}">
+  <div class="find-f"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+    <input id="find-in" type="search" role="combobox" aria-expanded="true" aria-controls="find-res" aria-autocomplete="list" aria-label="{{searchPlaceholder}}" placeholder="{{searchPlaceholder}}" autocomplete="off" spellcheck="false">
+    <button type="button" class="find-x" id="find-x">{{close}}</button></div>
+  <ul class="find-res" id="find-res" role="listbox" aria-label="{{results}}"></ul>
+  <div class="find-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> {{kSelect}}</span><span><kbd>Enter</kbd> {{kOpen}}</span><span><kbd>Esc</kbd> {{kClose}}</span></div>
+</dialog>
+
+<dialog class="dlg" id="dg-dialog" aria-labelledby="dg-dialog-t">
+  <div class="dlg-bar"><strong id="dg-dialog-t">{{diagram}}</strong><button type="button" class="dg-btn" id="dg-dialog-x">{{close}} <kbd>Esc</kbd></button></div>
+  <div class="dlg-host" id="dg-dialog-host"></div>
+</dialog>
+
+
