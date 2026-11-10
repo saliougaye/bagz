@@ -11,9 +11,9 @@ You are turning a topic into a guide the user will read on a laptop, check on a 
 
 The reader is the user, learning something or looking it up for themself. Read the request for what they already know and skip it. Go straight to the point; do not pad the guide for an imagined beginner.
 
-The depth comes from the request too. "Give me the big picture of Kubernetes" wants concepts and how the pieces connect. "How do I set up a reverse proxy" wants steps and commands to copy. "Explain how TLS works" may want only theory. When the request leaves a real gap, ask one to three short questions rather than guessing.
+The depth comes from the request too. "Give me the big picture of Kubernetes" wants concepts and how the pieces connect. "How do I set up a reverse proxy" wants steps and commands to copy. "Explain how TLS works" may want only theory. When the request leaves a real gap, ask one to three short questions together, before writing, rather than guessing.
 
-Sometimes the user does not want to learn a topic but to reach a decision: "analyse whether I should move my homelab to Proxmox", "which backup tool fits my setup", "is this architecture going to hold". That is an analysis, and it reads differently from a guide. Put the conclusion first: on the home page, say what you recommend and why in a few sentences, so the user could stop there. Then show the work: the criteria that matter for *their* situation, the options judged against them, the trade-offs, the risks, and what would change your answer. Say which assumptions you made about their context and ask about the ones that would flip the conclusion. A comparison diagram or a chart often earns its place here. Stay honest about uncertainty: an analysis that sounds surer than the evidence is worse than no analysis.
+Sometimes the user does not want to learn a topic but to reach a decision: "analyse whether I should move my homelab to Proxmox", "which backup tool fits my setup", "is this architecture going to hold". That is an analysis, and it reads differently from a guide. Put the conclusion first: on the home page, say what you recommend and why in a few sentences, so the user could stop there. Then show the work: the criteria that matter for *their* situation, the options judged against them, the trade-offs, the risks, and what would change your answer. Do not assume their context: when something about their situation would change the conclusion (scale, budget, constraints, what they already run), ask about it before you write. A comparison diagram or a chart often earns its place here. Stay honest about uncertainty: an analysis that sounds surer than the evidence is worse than no analysis.
 
 Write in the language the user is writing to you in, unless they ask for another one.
 
@@ -40,9 +40,9 @@ A diagram only when it shows something text cannot: an architecture (blocks in z
 
 Before you finish, read the guide top to bottom as the reader would. Every paragraph should follow from the one before it. Where you jump, add the missing step or the joining sentence.
 
-## Agree on the structure first
+## Plan the structure first
 
-Before writing, show the user a short plan and wait for their yes:
+Before writing, settle a short plan for yourself. It is your own plan, not something to show the user or wait on: they judge the finished guide, not the outline.
 
 - guide or analysis, the depth and the language you understood;
 - the path: the pages in reading order, each with the question it answers, grouped as they will appear in the sidebar;
@@ -50,7 +50,7 @@ Before writing, show the user a short plan and wait for their yes:
 - where a diagram or a chart helps and what it shows;
 - where the files will go.
 
-A minute spent here saves rewriting a whole guide.
+A minute spent here saves rewriting a whole guide. Clarifying questions about the request come before the plan; once they are answered, this skill adds no approval step. If another skill brings its own checkpoints, they stay as that skill defines them.
 
 ## Voice
 
