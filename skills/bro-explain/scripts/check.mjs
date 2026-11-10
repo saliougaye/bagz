@@ -43,7 +43,7 @@ await send('Page.navigate', { url: URL0 }); await sleep(800);
 const pages = await ev('FLAT.slice()');
 for (const scheme of ['light', 'dark']) for (const w of widths) {
   await send('Emulation.setDeviceMetricsOverride', { width: w, height: w > 800 ? 900 : 780, deviceScaleFactor: 1, mobile: w < 800 });
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
+  await ev(`localStorage.setItem('guide.theme', '${scheme}')`); /* guides open in light; dark is the reader's choice */
   for (const p of pages) {
     logs = []; checks++;
     await send("Page.navigate", { url: `${URL0}?r=${checks}#/${p}` }); await sleep(500); /* query forces a real reload: load-time errors are caught */

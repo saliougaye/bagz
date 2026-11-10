@@ -5,104 +5,93 @@ const GUIDE = { title: 'How a web application works', lang: 'en', meta: ['Beginn
 
 const PAGES = {
   introduction: {
-    line: 'What this guide is, who it is for, and how to read it.',
+    line: 'The question this guide answers, the short answer, and how to read it.',
     title: 'How a web application works', nav: 'Introduction', home: true,
-    lead: 'This guide shows the main blocks of a web application. It tells you what each block does, and how a request moves from block to block.',
+    lead: 'You click a link in an online shop and, a fraction of a second later, your order appears. This guide follows that click through every block it touches, so you can picture what runs where and why.',
     body: () => `
-<h2 id="about">About this guide</h2>
-<p>A web application is a program that you use through a web browser. Online shops, email and maps are web applications.</p>
-<p>A web application does not run on one computer. It runs on a set of blocks. Each block does one job. The blocks send data to each other through the network.</p>
-<p>This guide gives the name and the job of each main block. It also shows the path of one request, from the browser to the database and back.</p>
-<h2 id="who">Who this guide is for</h2>
-<ul>
-<li>People who start to work on a web application, for example a new developer or a support engineer.</li>
-<li>Product people who want to understand the words of the team.</li>
-<li>Teachers who show the blocks to a class. The text and the diagrams are large, so you can show them on a projector.</li>
-</ul>
-<h2 id="before">Before you start</h2>
+<h2 id="short-answer">The short answer</h2>
+<p>A web application is not one program on one computer. It is a handful of blocks, each with a single job, that pass your request along like a relay: one finds the server, one spreads the load, one runs the code, one keeps the data. When you know what each block does and in which order they are called, most of what developers talk about (slow pages, caches, outages, backups) starts to make sense.</p>
+<p>Throughout the guide you follow one example: a user opens the page of order 1042 in an online shop. Every page picks up that request where the previous one left it.</p>
+<h2 id="how-to-read">How to read this guide</h2>
+<p>Read the first two pages in order: <a href="#/main-blocks">The main blocks</a> gives you the map, and <a href="#/request-path">The path of a request</a> walks the example across it. After that, each block has its own page, which you can read in order or open when you need it. The last two pages collect the safety notes and the terms, for when you come back to look something up.</p>
 <dl class="meta">
-<div><dt>Level</dt><dd>Beginner. No code.</dd></div>
-<div><dt>Reading time</dt><dd>30 minutes, all pages</dd></div>
+<div><dt>Level</dt><dd>Beginner, no code needed</dd></div>
+<div><dt>Reading time</dt><dd>30 minutes for the whole guide</dd></div>
 <div><dt>Last updated</dt><dd><time datetime="${GUIDE.updatedISO}">${GUIDE.updated}</time></dd></div>
-<div><dt>Language</dt><dd>Simple English, in STE style</dd></div>
 </dl>
-${adm('note', 'This guide uses one term for one thing. For example, it always says “application server”. It never says “back end”. The page <a href="#/terms">Terms</a> gives the meaning of each term.')}
+${adm('note', 'The guide uses one name for each thing. It always says “application server”, for example, never “back end”, so that you never wonder whether two words mean two blocks. <a href="#/terms">Terms</a> lists them all.')}
 <h2 id="contents">Contents</h2>
-<p>The guide has ten pages in four groups. Read the pages in order, or go directly to one page.</p>
 ${contentsIndex()}` },
 
   'main-blocks': {
-    line: 'The nine main blocks in one diagram, and the four zones.',
+    line: 'The map: nine blocks in four zones, and which of them keep your data.',
     title: 'The main blocks',
-    lead: 'A web application is a set of blocks. Each block does one job. This page shows the nine main blocks in one diagram.',
+    lead: 'Before following the request, you need the map it travels on. This page shows the nine blocks of a typical web application and where each one runs.',
     body: () => `
 <h2 id="what">What a block is</h2>
-<p>A block is a program or a server with one job. The blocks send data to each other through the network.</p>
-<p>Small applications put some blocks on one server. Large applications have many copies of each block. The jobs of the blocks stay the same.</p>
-<h2 id="diagram">The diagram</h2>
-<p>The diagram shows the nine blocks in four zones. The arrows show where a request or a task goes.</p>
-${figure('arch', 'The main blocks of a web application', 'Nine blocks in four zones. Select a block to see its job, if it keeps data, and its connections.')}
-<h3 id="use">How to use the diagram</h3>
-<ul>
-<li>Select a block to see its job and its connections.</li>
-<li>Drag the background to move the diagram. Use the + and − buttons to zoom.</li>
-<li>Use Tab to go from block to block. Use the arrow keys to go to the nearest block in that direction. Push Enter to open the details.</li>
-<li>Select <strong>Full screen</strong> to show the diagram on all of the screen, for example on a projector.</li>
-<li>The colour, the shape and the name of a block always go together. The colour never shows the meaning alone.</li>
-</ul>
+<p>A block is a program or a server with one job, such as finding addresses or keeping data. The blocks talk to each other over the network, so each one can be replaced, copied or restarted without touching the others. That is the whole reason to split an application this way.</p>
+<p>A small application may run several blocks on the same server, while a large one runs many copies of each. The jobs stay the same either way, so the map below fits both.</p>
+<h2 id="diagram">The map</h2>
+<p>The diagram groups the nine blocks into four zones, from the user's device on the left to the data on the right. Read it left to right: that is roughly the order in which the request for order 1042 meets them.</p>
+${figure('arch', 'The main blocks of a web application', 'Nine blocks in four zones. Select a block to see its job, whether it keeps data, and what it connects to.')}
+<p>You can drag the map, zoom it, or open it full screen for a projector. With the keyboard, Tab moves between blocks, the arrow keys jump to the nearest one, and Enter opens its details.</p>
 <h2 id="zones">The four zones</h2>
-<p>Each block is in one zone. The zone tells you where the block runs.</p>
+<p>A zone tells you where a block runs, which in turn tells you who controls it and what happens when it fails.</p>
 <h3 id="client">Client</h3>
-<p>The client zone is the computer or the phone of the user. The browser runs here.</p>
+<p>The client is the user's computer or phone. Only the browser runs here, and you do not control it: the user may have an old version, a slow connection or a full disk.</p>
 <h3 id="edge-zone">Edge</h3>
-<p>The edge zone is between the user and your servers. DNS, the CDN and the load balancer are here. They find your servers, keep copies of files and share the requests.</p>
+<p>The edge sits between the user and your servers. DNS, the CDN and the load balancer live here, and their job is to get each request to the right server as fast as possible, answering it themselves when they can.</p>
 <h3 id="app-zone">Application</h3>
-<p>The application zone runs your code. The application server and the worker are here.</p>
+<p>The application zone runs your code: the application server, which answers requests, and the worker, which handles slow jobs in the background.</p>
 <h3 id="data-zone">Data</h3>
-<p>The data zone keeps the data. The database, the cache and the queue are here.</p>
+<p>The data zone keeps everything that must outlive a single request: the database, the cache and the queue.</p>
 <h2 id="keeps">Which blocks keep data</h2>
+<p>Whether a block keeps data decides how careful you must be with it. The table sorts the blocks from the one you can never lose to the ones you can restart freely.</p>
 <div class="tbl-wrap"><table class="tbl">
-<caption><b>Which blocks keep data</b>And what happens when the block stops.</caption>
+<caption><b>Which blocks keep data</b>And what the user notices when the block stops.</caption>
 <thead><tr><th scope="col">Block</th><th scope="col">Keeps data</th><th scope="col">If the block stops</th></tr></thead>
 <tbody>
-<tr><th scope="row">Database</th><td>Yes. The main copy of the data.</td><td>You cannot read or write data.</td></tr>
-<tr><th scope="row">Queue</th><td>Yes, until a worker completes the task.</td><td>New tasks cannot go in.</td></tr>
-<tr><th scope="row">Cache</th><td>A copy, for a short time.</td><td>The application is slower. You do not lose data.</td></tr>
-<tr><th scope="row">CDN, browser</td><td>A copy of files, for a short time.</td><td>Pages load more slowly.</td></tr>
-<tr><th scope="row">DNS, load balancer, application server, worker</th><td>No.</td><td>Requests or tasks stop. You do not lose data.</td></tr>
+<tr><th scope="row">Database</th><td>Yes, the main copy of everything.</td><td>Nobody can read or save anything.</td></tr>
+<tr><th scope="row">Queue</th><td>Yes, until a worker finishes the task.</td><td>New background tasks cannot be added.</td></tr>
+<tr><th scope="row">Cache</th><td>A short-lived copy.</td><td>Pages get slower, but no data is lost.</td></tr>
+<tr><th scope="row">CDN, browser</td><td>Short-lived copies of files.</td><td>Pages load more slowly.</td></tr>
+<tr><th scope="row">DNS, load balancer, application server, worker</th><td>No.</td><td>Requests or tasks stop until it is back; no data is lost.</td></tr>
 </tbody></table></div>
-${adm('caution', 'The database is the one block that must not lose data. Make a backup of the database every day. The page <a href="#/database/backups">Database</a> gives the procedure.')}` },
+<p>So the database is the one block whose failure costs you data rather than time, which is why it gets its own backup plan.</p>
+${adm('caution', 'Back up the database every day. A lost database is the one failure you cannot fix by restarting something. <a href="#/database/backups">Database</a> explains how.')}` },
 
   'request-path': {
-    line: 'One request, step by step, with a decision and two branches.',
+    line: 'Order 1042 from click to page, including the fork between a fast and a slow path.',
     title: 'The path of a request',
-    lead: 'What happens between a click and the page. This page follows one request through the blocks, and back.',
+    lead: 'With the map in mind, you can now follow the request for order 1042 from the click to the finished page, and see why the same page is sometimes fast and sometimes slow.',
     body: () => `
-<h2 id="example">The example</h2>
-<p>In this example, a user opens the page of order 1042 in an online shop. The browser sends this request:</p>
+<h2 id="example">The request</h2>
+<p>When the user clicks the link to their order, the browser sends a short text message to the shop:</p>
 ${code('HTTP request', `GET /orders/1042 HTTP/1.1
 Host: shop.example.com
 Accept: text/html
 Accept-Language: en`)}
-<p>The first line gives the method and the path. <code>GET</code> means “send me this page”. The other lines give more information about the request.</p>
-<h2 id="flow">The flow</h2>
-<p>The diagram shows the path of the request. At the decision, the path has two branches. The application server reads the order from the cache, or from the database.</p>
+<p>The first line carries the important part: <code>GET</code> means “send me this”, and <code>/orders/1042</code> says what. The lines below add context, such as which site it is for and which language the user prefers.</p>
+<h2 id="flow">The path at a glance</h2>
+<p>The request crosses the edge, reaches an application server, and then hits a fork: either the order is already in the cache, or the server has to fetch it from the database. Everything else is the same on both branches.</p>
 ${figure('flow', 'The path of one request', 'Eight steps and one decision. Select a step to see what it does and what it needs.')}
 <h2 id="steps">Step by step</h2>
+<p>Here is the same path in words, with the blocks named in the order the request meets them.</p>
 <ol class="steps">
-<li>The user selects the link to the order. The browser asks DNS for the IP address of shop.example.com.</li>
-<li>The browser sends the request to the CDN. The CDN does not keep a copy of order pages, so it sends the request to the load balancer.</li>
-<li>The load balancer selects an application server that is ready. It sends the request to that server.</li>
-<li>The application server reads the request. It looks for order 1042 in the cache.</li>
-<li>The application server makes the page. The response goes back to the browser on the same path.</li>
+<li>The browser asks DNS for the IP address of shop.example.com.</li>
+<li>The browser sends the request to the CDN, which does not store order pages and passes it to the load balancer.</li>
+<li>The load balancer picks an application server that is ready and forwards the request.</li>
+<li>The application server reads the path, finds the order number and asks the cache for order 1042.</li>
+<li>The server builds the page and sends it back to the browser along the same route.</li>
 </ol>
 <h3 id="hit">When the order is in the cache</h3>
-<p>The application server uses the copy from the cache. It does not read the database. This is the fast branch.</p>
+<p>If another request read order 1042 a moment ago, the cache still holds a copy, and the server uses it without touching the database. This is the fast branch.</p>
 <h3 id="miss">When the order is not in the cache</h3>
-<p>The application server reads the order from the database. Then it keeps a copy in the cache for the next request. This is the slow branch.</p>
-<h2 id="time">Time for each part</h2>
+<p>Otherwise the server reads the order from the database and, before answering, leaves a copy in the cache, so that the next request for the same order takes the fast branch. This is the slow branch.</p>
+<h2 id="time">Where the time goes</h2>
+<p>To see how much the fork matters, add up the time each part takes. The numbers below are invented but realistic in proportion: compare the two columns rather than reading any single value.</p>
 <div class="tbl-wrap"><table class="tbl">
-<caption>${EXAMPLE}<b>Time for each part of one request</b>The numbers only show the size of each part.</caption>
+<caption>${EXAMPLE}<b>Time for each part of one request</b>Only the proportions matter.</caption>
 <thead><tr><th scope="col">Part of the request</th><th scope="col" class="num">Fast branch</th><th scope="col" class="num">Slow branch</th></tr></thead>
 <tbody>
 <tr><td>DNS finds the IP address</td><td class="num">20 ms</td><td class="num">20 ms</td></tr>
@@ -115,81 +104,80 @@ ${figure('flow', 'The path of one request', 'Eight steps and one decision. Selec
 </tbody>
 <tfoot><tr><td>Total</td><td class="num">72 ms</td><td class="num">153 ms</td></tr></tfoot>
 </table></div>
+<p>The chart groups the same numbers by zone. The edge and the server cost the same on both branches; the whole difference is the data part.</p>
 ${chart({ title: 'Total time of one request', desc: 'The data part makes the difference between the two branches.', unit: 'ms', illustrative: true,
   series: [{ key: 'edge', label: 'Edge', color: 'c1' }, { key: 'server', label: 'Server', color: 'c2' }, { key: 'data', label: 'Data', color: 'c3' }],
   rows: [{ label: 'Fast branch', values: { edge: 35, server: 35, data: 2 } }, { label: 'Slow branch', values: { edge: 35, server: 35, data: 83 } }] })}
-${adm('note', 'These numbers are an example. They are not measured data. Measure your own application before you make a decision.')}
-<h2 id="long">Long tasks</h2>
-<p>Some tasks take a long time, for example a confirmation email. The application server does not do these tasks during the request. It adds a task to the queue and sends the response immediately. Then a worker gets the task from the queue and does it.</p>
-<p>Because of this, the user does not wait for the long task.</p>
-${adm('caution', 'Do not send an email or make a report during the request. If the task is slow, all of the request is slow. Put the task in the queue.')}` },
+${adm('note', 'These numbers are an example, not a measurement. Measure your own application before you decide what to optimise.')}
+<h2 id="long">What the request does not wait for</h2>
+<p>Placing the order also triggers a confirmation email, which can take seconds to send. If the server sent it during the request, the user would stare at a loading page the whole time. Instead the server drops a task in the queue and answers at once; a worker picks the task up a moment later and sends the email in the background.</p>
+${adm('caution', 'Never do slow work, such as sending email or building a report, inside the request. The user waits for all of it. Put it in the queue.')}
+<p>The next pages open up each block along this path, starting from the edge.</p>` },
 
   edge: {
-    line: 'DNS, the CDN and the load balancer.',
+    line: 'How DNS, the CDN and the load balancer get the request to a server.',
     title: 'Edge blocks',
-    lead: 'DNS, the CDN and the load balancer. These blocks are between the user and your servers.',
+    lead: 'The first three blocks the request meets have one goal in common: get it to a working server quickly, or answer it before it gets there.',
     body: () => `
 <h2 id="dns">DNS</h2>
-<p>DNS changes a name into an IP address. For example, it changes shop.example.com into 203.0.113.10. The browser needs this address to send a request.</p>
-<p>You can ask DNS for an address with the <code>dig</code> command:</p>
+<p>Computers find each other by number, people by name, and DNS translates between the two: it turns shop.example.com into an IP address such as 203.0.113.10, which is what the browser needs to send anything. You can ask DNS yourself with <code>dig</code>:</p>
 ${code('Terminal', `<span class="c">$</span> dig +short shop.example.com
 203.0.113.10`)}
-<h3 id="dns-keeps">What DNS keeps</h3>
-<p>DNS keeps the names and the addresses. It does not see the request, and it does not keep application data.</p>
+<h3 id="dns-keeps">What DNS sees</h3>
+<p>DNS only knows names and addresses. It never sees the request itself, so it holds no application data and a DNS problem never corrupts your orders, though it can make the whole shop unreachable.</p>
 <h2 id="cdn">CDN</h2>
-<p>A CDN is a set of servers in many countries. Each server keeps copies of files that do not change frequently, for example images and styles. The user gets these files from a server that is near. This makes the page faster.</p>
-<h3 id="cdn-old">Old copies</h3>
-<p>The CDN keeps each copy for a set time.</p>
-${adm('note', 'After you change a file, users can see the old copy for some minutes. Give each new version of a file a new name, for example styles.v42.css.')}
+<p>A CDN is a network of servers spread across many countries, each holding copies of files that rarely change, such as images and stylesheets. The user downloads them from the nearest one instead of from your servers, which makes the page faster and takes load off your application. Order pages change for every user, so the CDN passes those through.</p>
+<h3 id="cdn-old">Stale copies</h3>
+<p>Because the CDN keeps each copy for a set time, a file you have just changed can stay old for users until that time runs out.</p>
+${adm('note', 'Give every new version of a file a new name, for example styles.v42.css, so that the CDN treats it as a new file instead of serving the old copy.')}
 <h2 id="lb">Load balancer</h2>
-<p>The load balancer receives each request that the CDN cannot answer. It sends the request to one application server that is ready.</p>
+<p>Every request the CDN cannot answer reaches the load balancer, which picks one of your application servers and forwards it. Spreading requests this way lets you run several servers, and therefore lose one without losing the shop.</p>
 <h3 id="health">Health checks</h3>
-<p>The load balancer sends a small request to each application server every few seconds. This is a health check. If a server does not answer, the load balancer stops sending requests to it.</p>
-${adm('caution', 'Do not stop all application servers at the same time. The load balancer then has no server for the requests, and users get errors. Stop and start one server at a time.')}` },
+<p>To know which servers are ready, the load balancer sends each one a tiny request every few seconds, called a health check. A server that stops answering is taken out of rotation until it recovers.</p>
+${adm('caution', 'Never stop all application servers at once: the load balancer would have nowhere to send requests and every user would get an error. Restart them one at a time.')}` },
 
   application: {
-    line: 'The application server, the worker and the logs.',
+    line: 'The application server, the worker, and the logs they write.',
     title: 'Application blocks',
-    lead: 'The application server runs your code and makes each response. The worker does long tasks later.',
+    lead: 'Past the edge, the request reaches your own code. Two blocks run it: the application server answers requests, and the worker does slow jobs afterwards.',
     body: () => `
 <h2 id="app">Application server</h2>
-<p>The application server reads the request, gets the data and makes the response. Most applications have two or more application servers. Then one server can stop, and the application continues to work.</p>
-<h3 id="stateless">Keep no data in the server</h3>
-<p>An application server must not keep data between two requests. The next request can go to a different server. Keep the data in the database, the cache or the queue.</p>
-<h3 id="one-request">One request inside the server</h3>
-<p>The sequence shows who talks to whom, in order, when the order is not in the cache.</p>
+<p>The application server is where the request for order 1042 is actually understood: it reads the path, fetches the data and builds the page. Most applications run two or more of them behind the load balancer, so one can crash or be updated while the others keep serving.</p>
+<h3 id="stateless">Why it keeps nothing between requests</h3>
+<p>Since the load balancer can send the next request to a different server, anything one server remembers is invisible to the others. That is why an application server keeps no data between requests and stores everything in the database, the cache or the queue instead.</p>
+<h3 id="one-request">Inside the server</h3>
+<p>The sequence below zooms in on the slow branch from the previous page and shows each message the server exchanges, in order.</p>
 ${figure('seq-app', 'One request inside the application server', 'Eight messages between the browser, the server, the cache and the database. Select a message to see what happens.')}
 <h2 id="worker">Worker</h2>
-<p>The worker does tasks that take a long time, for example emails and reports. It gets each task from the queue. The user does not wait for the worker.</p>
-<p>The application server adds a task to the queue with one line of code. This example is in JavaScript:</p>
+<p>The worker handles the jobs that are too slow for a request, such as the confirmation email for order 1042. It takes tasks from the queue one by one, so the user never waits for it. Adding a task takes the application server a single line:</p>
 ${code('JavaScript', `<span class="c">// Add a task. A worker sends the email later.</span>
 await queue.add('send-confirmation-email', { orderId: 1042 });`)}
-<h3 id="retry">If a task fails</h3>
-<p>The worker can try the task again. Make sure that a task can run two times without a problem. For example, the worker must not send two emails for one order.</p>
+<h3 id="retry">When a task fails</h3>
+<p>A worker retries failed tasks, which means the same task can run twice. Write tasks so that a second run does no harm: the email code, for instance, should check whether the email for order 1042 has already gone out.</p>
 <h2 id="logs">Logs</h2>
-<p>Each application server and each worker writes a log. A log is a list of events with the time of each event. Logs help you find the cause of a problem.</p>
-${adm('warning', 'Do not write passwords, card numbers or health data in logs. Many people and tools can read logs. If this data becomes public, people can be harmed.')}` },
+<p>Both blocks write a log, a timestamped list of what they did. When something breaks, the log is usually where you find out what happened just before.</p>
+${adm('warning', 'Never write passwords, card numbers or health data to a log. Logs are read by many people and tools, and if this data leaks, real people can be harmed.')}` },
 
   database: {
-    line: 'The main copy of the data, queries and backups.',
+    line: 'Where the main copy of the data lives, how the server reads it, and how to back it up.',
     title: 'Database',
-    lead: 'The database keeps the main copy of the data. It is the one block that must not lose data.',
+    lead: 'On the slow branch, the application server asks the database for order 1042. The database holds the one copy of your data that must never be lost.',
     body: () => `
 <h2 id="keeps">What the database keeps</h2>
-<p>The database keeps the data of the application, for example users, products and orders. The data is in tables. Each row of a table is one item, for example one order.</p>
-<h2 id="query">Read and write data</h2>
-<p>The application server sends a query to the database. A query is a request for data. This query reads order 1042:</p>
+<p>The database stores everything the application needs to remember: users, products, orders. Data sits in tables, and each row is one item, so order 1042 is one row in the <code>orders</code> table.</p>
+<h2 id="query">Reading and writing</h2>
+<p>The application server talks to the database with queries, requests written in a language such as SQL. This one fetches order 1042:</p>
 ${code('SQL', `SELECT id, status, total
 FROM orders
 WHERE id = 1042;`)}
-<p>A query can also write data, for example a new order.</p>
+<p>Writing a new order works the same way, with a different kind of query.</p>
 <h2 id="which-store">Database, cache or queue</h2>
-<p>The three blocks all keep data, but for different jobs.</p>
+<p>The database is not the only block that keeps data: the cache and the queue do too, but each for a different purpose. The comparison shows where each one is strong.</p>
 ${figure('stores', 'Where to keep data', 'Three blocks, four criteria. Select a criterion to compare the three blocks.')}
 <h2 id="backups">Backups</h2>
-<p>A backup is a copy of all of the data at one time. If the database loses data, you can put the data back from the backup.</p>
+<p>A backup is a copy of all the data at a moment in time. If the database loses or corrupts data, the backup is how you get it back, so how often you take one decides how much you can lose. A common plan combines three kinds:</p>
 <div class="tbl-wrap"><table class="tbl">
-<caption>${EXAMPLE}<b>A backup plan</b>Change the times to agree with your application.</caption>
+<caption>${EXAMPLE}<b>A backup plan</b>Adjust the times to how much data you can afford to lose.</caption>
 <thead><tr><th scope="col">Backup</th><th scope="col">When</th><th scope="col" class="num">Keep for</th></tr></thead>
 <tbody>
 <tr><td>Full backup</td><td>Every day at 02:00</td><td class="num">30 days</td></tr>
@@ -197,115 +185,117 @@ ${figure('stores', 'Where to keep data', 'Three blocks, four criteria. Select a 
 <tr><td>Monthly copy</td><td>First day of the month</td><td class="num">12 months</td></tr>
 </tbody></table></div>
 <h3 id="test">Test the backup</h3>
+<p>A backup you have never restored is a hope, not a backup. Once a month, prove that it works:</p>
 <ol class="steps">
-<li>Each month, put a backup on a test server.</li>
+<li>Restore the latest backup on a test server.</li>
 <li>Start the application on the test server.</li>
-<li>Open some orders and make sure that the data is correct.</li>
+<li>Open a few orders and check that the data is correct.</li>
 </ol>
-${adm('caution', 'Do not stop the database while it writes data. You can lose data. First stop the application servers and the workers. Then stop the database.')}` },
+${adm('caution', 'Do not stop the database while it is writing, or you can lose data. Stop the application servers and the workers first, then the database.')}` },
 
   cache: {
-    line: 'Fast copies of frequent data, and when a copy is too old.',
+    line: 'Why the fast branch is fast, and how a copy goes stale.',
     title: 'Cache',
-    lead: 'The cache keeps a copy of frequent data in memory. Memory is faster than a disk.',
+    lead: 'The cache is what makes the fast branch fast. It keeps copies of frequently read data in memory, which answers far quicker than the database on disk.',
     body: () => `
 <h2 id="how">How the cache works</h2>
-<p>The application server asks the cache for the data first. If the cache has the data, the application server uses it. If the cache does not have the data, the application server reads the database and keeps a copy in the cache.</p>
-<p>Each copy has a name. This command reads the copy of order 1042:</p>
+<p>The application server always asks the cache first. If the cache has the data, the server uses it and is done; if not, the server reads the database and stores a copy in the cache on the way back. Each copy is stored under a name, so reading order 1042 looks like this:</p>
 ${code('Cache command', `GET order:1042`)}
-<h2 id="old">When a copy is too old</h2>
+<h2 id="old">Why a copy goes stale</h2>
+<p>The catch is that the copy can fall behind. If the order changes in the database, the cache keeps serving the old version until something removes it. The timeline follows one copy through its life.</p>
 ${figure('cache-life', 'The life of one copy in the cache', 'From the first write to the next read from the database, with an expiry time of 60 seconds. Select a moment to see what happens.')}
-<p>The data in the database can change. Then the copy in the cache is old.</p>
-<h3 id="expiry">Expiry time</h3>
-<p>Each copy has an expiry time, for example 60 seconds. After this time, the cache deletes the copy. The next request reads the new data from the database.</p>
-<h3 id="delete">Delete a copy after a change</h3>
-<p>When the application changes an order, it also deletes the copy of that order in the cache.</p>
-${adm('caution', 'Do not clear all of the cache at one time. All requests then go to the database. The database can become too slow and stop.')}
-${adm('note', 'If the cache stops, you do not lose data. The data is still in the database. The application is slower until the cache starts again.')}` },
+<p>There are two ways to keep stale copies in check, and most applications use both.</p>
+<h3 id="expiry">Let it expire</h3>
+<p>Every copy gets an expiry time, for example 60 seconds, after which the cache deletes it. The next request then reads fresh data from the database, so a copy is never more than 60 seconds out of date.</p>
+<h3 id="delete">Delete it on change</h3>
+<p>When the application changes order 1042, it also deletes the cached copy right away, so the next read fetches the new version instead of waiting for the expiry.</p>
+${adm('caution', 'Do not clear the whole cache at once. Every request would fall through to the database at the same moment, and the database can slow down or stop under the load.')}
+${adm('note', 'If the cache stops, no data is lost: it is all still in the database. The application is slower until the cache is back.')}` },
 
   queue: {
-    line: 'Tasks that wait for a worker, and their states.',
+    line: 'How background tasks wait for a worker, and what their states mean.',
     title: 'Queue',
-    lead: 'The queue keeps a list of tasks that wait for a worker.',
+    lead: 'The confirmation email for order 1042 waits in the queue until a worker is free. The queue is what lets the request answer straight away.',
     body: () => `
 <h2 id="how">How the queue works</h2>
-<p>The application server adds a task to the end of the queue. The worker gets the task at the start of the queue. When the task is complete, the worker removes it.</p>
+<p>The application server adds tasks to the end of the queue, and workers take them from the front, so tasks run in the order they arrived. A worker removes a task only when it has finished it, which means a task is never lost just because a worker crashed halfway.</p>
 <h2 id="states">The states of a task</h2>
+<p>At any moment a task is in exactly one of four states. When you look at a queue dashboard, these are the numbers you see.</p>
 <div class="tbl-wrap"><table class="tbl">
 <caption><b>The states of a task</b>Each task has one state at a time.</caption>
 <thead><tr><th scope="col">State</th><th scope="col">Meaning</th></tr></thead>
 <tbody>
-<tr><th scope="row">Waiting</th><td>The task is in the queue. No worker has it.</td></tr>
-<tr><th scope="row">Running</th><td>A worker does the task.</td></tr>
-<tr><th scope="row">Complete</th><td>The worker completed the task and removed it.</td></tr>
-<tr><th scope="row">Failed</th><td>The task did not complete. The worker tries again, up to 3 times.</td></tr>
+<tr><th scope="row">Waiting</th><td>In the queue, not yet taken by a worker.</td></tr>
+<tr><th scope="row">Running</th><td>A worker is doing it now.</td></tr>
+<tr><th scope="row">Complete</th><td>Done and removed from the queue.</td></tr>
+<tr><th scope="row">Failed</th><td>Did not finish; the worker will retry it, up to 3 times.</td></tr>
 </tbody></table></div>
-<h2 id="stops">If the worker stops</h2>
-<p>If the worker stops, the tasks stay in the queue. They wait. When the worker starts again, it does the tasks in order.</p>
-<h3 id="long-queue">A queue that becomes long</h3>
-<p>Look at the number of waiting tasks. If the number increases for a long time, the workers are too slow. Add one more worker.</p>
-${adm('caution', 'Do not delete the queue to make it short. You lose the tasks, for example the emails to your users.')}` },
+<h2 id="stops">When the worker stops</h2>
+<p>If every worker stops, nothing is lost: tasks simply pile up in the waiting state and run, in order, once a worker comes back.</p>
+<h3 id="long-queue">A queue that keeps growing</h3>
+<p>Watch the number of waiting tasks. A short spike is normal, but if it keeps climbing for a long time, the workers cannot keep up and you need another one.</p>
+${adm('caution', 'Do not empty the queue to shorten it. Every task in it is real work, such as an email a customer is waiting for.')}` },
 
   safety: {
-    line: 'All WARNING, CAUTION and NOTE items in one page.',
+    line: 'Every WARNING, CAUTION and NOTE from the guide, in one place.',
     title: 'Safety notes',
-    lead: 'What can go wrong, and how to prevent it. Read these notes before you change a live system.',
+    lead: 'The notes from every page, collected here so you can read them all before you touch a live system.',
     body: () => `
 <h2 id="types">Types of notes</h2>
-<p>This guide uses three types of notes. Each type has a word and a shape. The colour only helps.</p>
+<p>The guide uses three kinds of notes, each with its own word and shape; the colour only helps.</p>
 <dl class="kinds">
-<div><dt><span aria-hidden="true">▲</span>WARNING</dt><dd>There is a risk to people.</dd></div>
-<div><dt><span aria-hidden="true">◆</span>CAUTION</dt><dd>There is a risk to equipment or data.</dd></div>
-<div><dt><span aria-hidden="true">●</span>NOTE</dt><dd>Information that helps you.</dd></div>
+<div><dt><span aria-hidden="true">▲</span>WARNING</dt><dd>A risk to people.</dd></div>
+<div><dt><span aria-hidden="true">◆</span>CAUTION</dt><dd>A risk to equipment or data.</dd></div>
+<div><dt><span aria-hidden="true">●</span>NOTE</dt><dd>Something that helps you.</dd></div>
 </dl>
 <h2 id="data">Data</h2>
-${adm('warning', 'Do not write passwords, card numbers or health data in logs. Many people and tools can read logs. If this data becomes public, people can be harmed.')}
-${adm('caution', 'Do not stop the database while it writes data. You can lose data. First stop the application servers and the workers. Then stop the database.')}
+${adm('warning', 'Never write passwords, card numbers or health data to a log. Logs are read by many people and tools, and if this data leaks, real people can be harmed.')}
+${adm('caution', 'Do not stop the database while it is writing, or you can lose data. Stop the application servers and the workers first, then the database.')}
 <h2 id="changes">Changes to a live system</h2>
-${adm('caution', 'Do not clear all of the cache at one time. All requests then go to the database. The database can become too slow and stop.')}
-${adm('caution', 'Do not stop all application servers at the same time. Stop and start one server at a time.')}
-${adm('note', 'The CDN can keep an old copy of a file for some minutes. After you change a file, users can see the old file for a short time.')}
+${adm('caution', 'Do not clear the whole cache at once. Every request would fall through to the database at the same moment, and the database can slow down or stop under the load.')}
+${adm('caution', 'Never stop all application servers at once. Restart them one at a time.')}
+${adm('note', 'The CDN can serve an old copy of a file for a few minutes after you change it. Give each new version a new name.')}
 <h3 id="before-change">Before you change a live system</h3>
 <ol class="steps">
-<li>Make sure that you have a backup of the database.</li>
-<li>Tell the team what you change, and when.</li>
+<li>Check that you have a recent, tested backup of the database.</li>
+<li>Tell the team what you are changing, and when.</li>
 <li>Change one block at a time.</li>
-<li>Look at the logs and the errors for 10 minutes after the change.</li>
+<li>Watch the logs and the error rate for 10 minutes after the change.</li>
 </ol>` },
 
   terms: {
-    line: 'The meaning of each term in this guide.',
+    line: 'Every term in the guide, with the one meaning it has here.',
     title: 'Terms',
-    lead: 'Each term has one meaning in this guide.',
+    lead: 'Each term has exactly one meaning in this guide. Come back here when a word is unclear.',
     body: () => `
 <h2 id="blocks">Blocks</h2>
 <dl class="kinds">
-<div><dt>Application server</dt><dd>The server that runs the code of the application and makes each response.</dd></div>
-<div><dt>Browser</dt><dd>The program on the computer or phone of the user. It sends requests and shows pages.</dd></div>
-<div><dt>Cache</dt><dd>A fast memory that keeps a copy of frequent data for a short time.</dd></div>
-<div><dt>CDN</dt><dd>Content delivery network. A set of servers in many places. They keep copies of files near the users.</dd></div>
+<div><dt>Application server</dt><dd>The server that runs the application's code and builds each response.</dd></div>
+<div><dt>Browser</dt><dd>The program on the user's computer or phone that sends requests and shows pages.</dd></div>
+<div><dt>Cache</dt><dd>Fast memory that holds short-lived copies of frequently read data.</dd></div>
+<div><dt>CDN</dt><dd>Content delivery network: servers in many places that keep copies of files close to users.</dd></div>
 <div><dt>Database</dt><dd>The block that keeps the main copy of the data.</dd></div>
-<div><dt>DNS</dt><dd>Domain name system. It changes a name, for example shop.example.com, into an IP address.</dd></div>
+<div><dt>DNS</dt><dd>Domain name system: turns a name such as shop.example.com into an IP address.</dd></div>
 <div><dt>Load balancer</dt><dd>The block that sends each request to one of the application servers.</dd></div>
-<div><dt>Queue</dt><dd>A list of tasks that wait for a worker.</dd></div>
-<div><dt>Worker</dt><dd>A program that does long tasks from the queue.</dd></div>
+<div><dt>Queue</dt><dd>An ordered list of tasks waiting for a worker.</dd></div>
+<div><dt>Worker</dt><dd>A program that takes tasks from the queue and does them in the background.</dd></div>
 </dl>
 <h2 id="messages">Messages</h2>
 <dl class="kinds">
 <div><dt>Query</dt><dd>A request for data that the application server sends to the database.</dd></div>
-<div><dt>Request</dt><dd>A message from the browser. It asks for a page or for data.</dd></div>
-<div><dt>Response</dt><dd>The message that comes back to the browser. It contains the page or the data.</dd></div>
-<div><dt>Task</dt><dd>A job for a worker, for example “send the confirmation email for order 1042”.</dd></div>
+<div><dt>Request</dt><dd>A message from the browser asking for a page or for data.</dd></div>
+<div><dt>Response</dt><dd>The message that goes back to the browser with the page or the data.</dd></div>
+<div><dt>Task</dt><dd>A job for a worker, such as “send the confirmation email for order 1042”.</dd></div>
 </dl>
 <h2 id="other">Other terms</h2>
 <dl class="kinds">
-<div><dt>Backup</dt><dd>A copy of all of the data at one time.</dd></div>
-<div><dt>Block</dt><dd>One part of the application with one job. A block is a program, a server or a service.</dd></div>
-<div><dt>Expiry time</dt><dd>The time after which the cache deletes a copy.</dd></div>
-<div><dt>Health check</dt><dd>A small request that the load balancer sends to find out if a server is ready.</dd></div>
-<div><dt>IP address</dt><dd>The number that identifies a server on the network, for example 203.0.113.10.</dd></div>
-<div><dt>Log</dt><dd>A list of events with the time of each event.</dd></div>
-<div><dt>Zone</dt><dd>A part of the diagram that shows where a block runs: client, edge, application or data.</dd></div>
+<div><dt>Backup</dt><dd>A copy of all the data at one moment in time.</dd></div>
+<div><dt>Block</dt><dd>One part of the application with one job: a program, a server or a service.</dd></div>
+<div><dt>Expiry time</dt><dd>How long the cache keeps a copy before deleting it.</dd></div>
+<div><dt>Health check</dt><dd>A tiny request the load balancer sends to find out whether a server is ready.</dd></div>
+<div><dt>IP address</dt><dd>The number that identifies a server on the network, such as 203.0.113.10.</dd></div>
+<div><dt>Log</dt><dd>A timestamped list of what a block did.</dd></div>
+<div><dt>Zone</dt><dd>A band of the map that shows where a block runs: client, edge, application or data.</dd></div>
 </dl>` }
 };
 
@@ -350,13 +340,13 @@ const DIAGRAMS = {
     options: [{ id: 'db', label: 'Database', sub: 'the main copy' }, { id: 'cache', label: 'Cache', sub: 'fast copies' }, { id: 'queue', label: 'Queue', sub: 'tasks in order' }],
     rows: [
       { label: 'After a restart', what: 'Does the data stay when the block stops and starts again?', cells: {
-        db: ['good', 'Yes. It writes the data to disk.'], cache: ['bad', 'No. A restart can empty it.'], queue: ['mid', 'Usually, until a worker takes the task.'] } },
+        db: ['good', 'It writes the data to disk.', 'Data kept'], cache: ['bad', 'It keeps data in memory only.', 'Can be empty'], queue: ['mid', 'Until a worker takes the task.', 'Usually kept'] } },
       { label: 'Speed', what: 'How fast the application server can read or write.', cells: {
-        db: ['mid', 'Fast, but slower than memory.'], cache: ['good', 'Very fast: the data is in memory.'], queue: ['good', 'Fast to add and take a task.'] } },
+        db: ['mid', 'Disk is slower than memory.', 'Fast'], cache: ['good', 'The data is in memory.', 'Very fast'], queue: ['good', 'Adding and taking a task is cheap.', 'Fast'] } },
       { label: 'Find data', what: 'Can you search and filter the data?', cells: {
-        db: ['good', 'Yes. Queries find and filter any data.'], cache: ['bad', 'Only by key.'], queue: ['bad', 'Only the next task.'] } },
+        db: ['good', 'Queries search and filter on any field.', 'Any query'], cache: ['bad', 'You must know the exact name of the copy.', 'By key only'], queue: ['bad', 'You only get the next task.', 'Next task only'] } },
       { label: 'If it stops', what: 'What happens to the application when the block stops.', cells: {
-        db: ['bad', 'You cannot read or write data.'], cache: ['mid', 'The application is slower. You do not lose data.'], queue: ['mid', 'New tasks cannot go in.'] } }
+        db: ['bad', 'Nobody can read or write data.', 'App stops'], cache: ['mid', 'Pages are slower, no data is lost.', 'App slower'], queue: ['mid', 'New tasks cannot go in.', 'Tasks wait'] } }
     ],
     when: { db: 'The main copy of your data.', cache: 'Copies of data that you read frequently.', queue: 'Work that can happen later.' }
   },

@@ -51,7 +51,7 @@ def main():
     if '</script' in js.lower():
         sys.exit('The content contains "</script". Write it as "<\\/script" inside JS strings.')
     head = ('<script>(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("guide.theme")}catch(e){}'
-            'd.setAttribute("data-theme",t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))})()</script>')
+            'd.setAttribute("data-theme",t==="dark"?"dark":"light")})()</script>')
     html = f'''<!doctype html>
 <html lang="{lang}">
 <head>

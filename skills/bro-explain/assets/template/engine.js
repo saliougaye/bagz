@@ -25,8 +25,44 @@ $('#search-open').setAttribute('aria-label', `${T.searchGuide} (${isMac ? 'Comma
    panel, full screen, keyboard. Zones and edge ports are computed.
    ===================================================================== */
 let DGUID = 0;
+/* Architecture (zones, no kinds): zones become columns read left to right, each with a category colour.
+   Blocks stack in a column in x order (then array order); x/y/w/h in the spec only give that order. */
+const isArch = s => (s.zones || []).length > 0 && !(s.kinds && Object.keys(s.kinds).length);
+const zoneColor = (i, n) => n > 3 ? (i === 0 ? 'var(--k-step)' : `var(--c${Math.min(i, 3)})`) : `var(--c${i + 1})`;
+function layoutColumns(s) {
+  const NW = s.nodeW, NH = s.nodeH, PAD = 12, HEAD = 42, RG = 22, CG = 48, colW = NW + PAD * 2;
+  const G = s.zones.map(z => s.nodes.map((n, k) => [n, k]).filter(([n]) => n.zone === z.id).sort((a, b) => (a[0].x ?? 0) - (b[0].x ?? 0) || a[1] - b[1]).map(([n]) => n));
+  const max = Math.max(...G.map(g => g.length)), H = HEAD + max * (NH + RG) - RG + PAD, nodes = [];
+  const zones = s.zones.map((z, i) => { const x = i * (colW + CG), off = (max - G[i].length) * (NH + RG) / 2;
+    G[i].forEach((n, j) => nodes.push({ ...n, x: x + PAD, y: HEAD + off + j * (NH + RG) })); return { ...z, x, y: 0, w: colW, h: H }; });
+  const col = Object.fromEntries(nodes.map(n => [n.id, s.zones.findIndex(z => z.id === n.zone)]));
+  const edges = s.edges.map(({ fs, ts, ...e }) => { const d = col[e.to] - col[e.from]; return d > 0 ? { ...e, fs: 'r', ts: 'l' } : d < 0 ? { ...e, fs: 'l', ts: 'r' } : e; });
+  return { ...s, zones, nodes, edges, w: s.zones.length * (colW + CG) - CG, h: H };
+}
+/* right-angle route between two ports, rounded corners; returns the path and its midpoint */
+function orthoRoute(a, sa, b, sb) {
+  const N = { t: [0, -1], b: [0, 1], l: [-1, 0], r: [1, 0] }, na = N[sa], nb = N[sb], G = 22;
+  const va = na[0] === 0, vb = nb[0] === 0, A = [a.x + na[0] * G, a.y + na[1] * G], B = [b.x + nb[0] * G, b.y + nb[1] * G];
+  let P;
+  if (va && vb) { const my = (na[1] > 0 && nb[1] < 0 && b.y > a.y) || (na[1] < 0 && nb[1] > 0 && b.y < a.y) ? (a.y + b.y) / 2 : na[1] < 0 ? Math.min(A[1], B[1]) : Math.max(A[1], B[1]); P = [[a.x, a.y], [a.x, my], [b.x, my], [b.x, b.y]]; }
+  else if (!va && !vb) { const mx = (na[0] > 0 && nb[0] < 0 && b.x > a.x) || (na[0] < 0 && nb[0] > 0 && b.x < a.x) ? (a.x + b.x) / 2 : na[0] < 0 ? Math.min(A[0], B[0]) : Math.max(A[0], B[0]); P = [[a.x, a.y], [mx, a.y], [mx, b.y], [b.x, b.y]]; }
+  else if (va) P = (Math.sign(b.y - a.y) === na[1] && Math.sign(a.x - b.x) === nb[0]) ? [[a.x, a.y], [a.x, b.y], [b.x, b.y]] : [[a.x, a.y], [a.x, A[1]], [B[0], A[1]], [B[0], b.y], [b.x, b.y]];
+  else P = (Math.sign(b.x - a.x) === na[0] && Math.sign(a.y - b.y) === nb[1]) ? [[a.x, a.y], [b.x, a.y], [b.x, b.y]] : [[a.x, a.y], [A[0], a.y], [A[0], B[1]], [b.x, B[1]], [b.x, b.y]];
+  P = P.filter((p, i) => i === 0 || Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) > 0.5);
+  let d = `M${P[0][0]},${P[0][1]}`;
+  for (let i = 1; i < P.length - 1; i++) { const [p0, p1, p2] = [P[i - 1], P[i], P[i + 1]];
+    const l1 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), l2 = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]), r = Math.min(12, l1 / 2, l2 / 2);
+    const u = [(p1[0] - p0[0]) / l1, (p1[1] - p0[1]) / l1], w = [(p2[0] - p1[0]) / l2, (p2[1] - p1[1]) / l2];
+    d += ` L${p1[0] - u[0] * r},${p1[1] - u[1] * r} Q${p1[0]},${p1[1]} ${p1[0] + w[0] * r},${p1[1] + w[1] * r}`; }
+  d += ` L${P.at(-1)[0]},${P.at(-1)[1]}`;
+  const seg = P.slice(1).map((p, i) => Math.hypot(p[0] - P[i][0], p[1] - P[i][1])); let half = seg.reduce((x, y) => x + y, 0) / 2, mx = P[0][0], my = P[0][1];
+  for (let i = 0; i < seg.length; i++) { if (half <= seg[i]) { const t = seg[i] ? half / seg[i] : 0; mx = P[i][0] + (P[i + 1][0] - P[i][0]) * t; my = P[i][1] + (P[i + 1][1] - P[i][1]) * t; break; } half -= seg[i]; }
+  return { d, mx, my };
+}
+
 function createDiagram(host, spec, opts = {}) {
   if (spec.type && spec.type !== 'nodes') return createPanelDiagram(host, spec);
+  const arch = isArch(spec); if (arch) spec = layoutColumns(spec);
   const full = !!opts.full, uid = 'dg' + (++DGUID);
   const nodes = spec.nodes, edges = spec.edges, kinds = spec.kinds || {};
   const NW = spec.nodeW, NH = spec.nodeH, W = spec.w, H = spec.h;
@@ -50,10 +86,7 @@ function createDiagram(host, spec, opts = {}) {
       list.sort((p, q) => v ? (p.other.x - q.other.x) : (p.other.y - q.other.y));
       list.forEach((p, j) => { const f = (j + 1) / (list.length + 1);
         p.o[p.end] = side === 't' ? { x: r.x + r.w * f, y: r.y } : side === 'b' ? { x: r.x + r.w * f, y: r.y + r.h } : side === 'l' ? { x: r.x, y: r.y + r.h * f } : { x: r.x + r.w, y: r.y + r.h * f }; }); });
-    const N = { t: [0, -1], b: [0, 1], l: [-1, 0], r: [1, 0] };
-    return E.map(o => { const a = o.a, b = o.b, d = Math.max(22, Math.hypot(b.x - a.x, b.y - a.y) / 2.4);
-      const c1 = [a.x + N[o.sa][0] * d, a.y + N[o.sa][1] * d], c2 = [b.x + N[o.sb][0] * d, b.y + N[o.sb][1] * d];
-      return { e: o.e, d: `M${a.x},${a.y} C${c1} ${c2} ${b.x},${b.y}`, mx: (a.x + 3 * c1[0] + 3 * c2[0] + b.x) / 8, my: (a.y + 3 * c1[1] + 3 * c2[1] + b.y) / 8 }; });
+    return E.map(o => ({ e: o.e, ...orthoRoute(o.a, o.sa, o.b, o.sb) }));
   })();
 
   const body = n => `<p>${esc(n.what)}</p>${n.zone ? `<dl class="pn-f"><div><dt>${T.zone}</dt><dd>${esc(zoneT[n.zone])}</dd></div>${(n.fields || []).map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl>` : (n.fields || []).length ? `<dl class="pn-f">${n.fields.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl>` : ''}`;
@@ -62,32 +95,30 @@ function createDiagram(host, spec, opts = {}) {
     return `${i.length ? `<h5 class="pn-ct">${T.receivesFrom}</h5><ul class="pn-c">${i.map(e => li(e, e.from)).join('')}</ul>` : ''}${o.length ? `<h5 class="pn-ct">${T.goesTo}</h5><ul class="pn-c">${o.map(e => li(e, e.to)).join('')}</ul>` : ''}`; };
   const kg = k => `<svg class="kg" viewBox="0 0 16 16" aria-hidden="true" style="--k:var(--k-${k})">${ICON.shape[k]}</svg>`;
 
-  host.innerHTML = `<div class="dg${full ? ' is-full' : ''}" id="${uid}">
+  host.innerHTML = `<div class="dg${full ? ' is-full' : ''}${arch ? ' dg-arch' : ''}" id="${uid}">
   <div class="dg-bar" role="group" aria-label="${T.diagramControls}">
     <div class="dg-grp"><button type="button" class="dg-btn" data-a="out" aria-label="${T.zoomOut}">−</button><span class="dg-zoom" aria-hidden="true">100%</span><button type="button" class="dg-btn" data-a="in" aria-label="${T.zoomIn}">+</button><button type="button" class="dg-btn" data-a="fit">${T.fit}</button></div>
     ${full ? '' : `<div class="dg-grp dg-right"><button type="button" class="dg-btn" data-a="full">${ICON.full}${T.fullScreen}</button></div>`}
   </div>
   <div class="dg-body">
     <div class="dg-vp" tabindex="0" role="group" aria-label="${T.diagramCanvas}: ${esc(spec.title)}" aria-describedby="${uid}-h">
-      <svg class="dg-bg" aria-hidden="true"><defs><pattern id="${uid}-pt" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2"/></pattern></defs><rect width="100%" height="100%" fill="url(#${uid}-pt)"/></svg>
       <div class="dg-world" style="width:${W}px;height:${H}px">
-        ${(spec.zones || []).map(z => `<div class="dg-zone" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px" aria-hidden="true"><span class="dg-zl">${esc(z.title)}</span></div>`).join('')}
+        ${(spec.zones || []).map((z, i) => `<div class="dg-zone" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px${arch ? `;--zc:${zoneColor(i, spec.zones.length)}` : ''}" aria-hidden="true"><span class="dg-zl">${esc(z.title)}</span></div>`).join('')}
         <svg class="dg-edges" width="${W}" height="${H}" aria-hidden="true"><defs><marker id="${uid}-a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path class="dg-ar" d="M0,0 L10,4 L0,8z"/></marker><marker id="${uid}-b" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path class="dg-ar-on" d="M0,0 L12,5 L0,10z"/></marker></defs>
           ${routes.map(r => `<path class="dg-e" data-f="${r.e.from}" data-t="${r.e.to}" d="${r.d}" marker-end="url(#${uid}-a)"/>${r.e.label ? `<text class="dg-el" data-f="${r.e.from}" data-t="${r.e.to}" x="${r.mx}" y="${r.my}">${esc(r.e.label)}</text>` : ''}`).join('')}</svg>
-        ${order.map(id => { const n = byId[id]; return `<button type="button" class="dg-n${n.kind ? ' has-k k-' + n.kind : ''}" data-id="${id}" aria-pressed="false" aria-describedby="${uid}-d-${id}" style="left:${n.x}px;top:${n.y}px;width:${NW}px;height:${NH}px${n.kind ? `;--k:var(--k-${n.kind})` : ''}"><span class="dg-t">${kind(n) ? kg(n.kind) : ''}${esc(n.title)}</span>${n.sub ? `<span class="dg-s">${esc(n.sub)}</span>` : ''}<span class="sr" id="${uid}-d-${id}">${esc((kind(n) ? kind(n).label + '. ' : '') + (n.zone ? (T.zone + ': ') + zoneT[n.zone] + '. ' : '') + nbr(n))}</span></button>`; }).join('')}
+        ${order.map(id => { const n = byId[id]; return `<button type="button" class="dg-n${n.kind ? ' has-k k-' + n.kind : ''}" data-id="${id}" aria-pressed="false" aria-describedby="${uid}-d-${id}" style="left:${n.x}px;top:${n.y}px;width:${NW}px;height:${NH}px${n.kind ? `;--k:var(--k-${n.kind})` : ''}${arch ? `;--zc:${zoneColor(spec.zones.findIndex(z => z.id === n.zone), spec.zones.length)}` : ''}"><span class="dg-t">${kind(n) ? kg(n.kind) : ''}${esc(n.title)}</span>${n.sub ? `<span class="dg-s">${esc(n.sub)}</span>` : ''}<span class="sr" id="${uid}-d-${id}">${esc((kind(n) ? kind(n).label + '. ' : '') + (n.zone ? (T.zone + ': ') + zoneT[n.zone] + '. ' : '') + nbr(n))}</span></button>`; }).join('')}
       </div>
     </div>
     <aside class="dg-panel" hidden aria-label="${T.details}"></aside>
   </div>
   <div class="dg-foot"><span class="dg-leg"><span>${nodes.length} ${unit}</span>${Object.entries(kinds).map(([id, k]) => `<span class="it">${kg(id)}${esc(k.label)}</span>`).join('')}</span><span class="dg-hint" id="${uid}-h">${esc(spec.hint)}</span></div></div>`;
 
-  const root = $('.dg', host), vp = $('.dg-vp', root), world = $('.dg-world', root), panel = $('.dg-panel', root), zoomL = $('.dg-zoom', root), pat = $('pattern', root);
+  const root = $('.dg', host), vp = $('.dg-vp', root), world = $('.dg-world', root), panel = $('.dg-panel', root), zoomL = $('.dg-zoom', root);
   const nodeEl = id => $(`.dg-n[data-id="${id}"]`, root);
   let tx = 0, ty = 0, sc = 1, userMoved = false, selected = null, dragged = false;
   const apply = (anim = false) => {
     world.classList.toggle('is-anim', anim && !reduced());
     world.style.transform = `translate(${tx}px,${ty}px) scale(${sc})`;
-    pat.setAttribute('patternTransform', `translate(${tx} ${ty}) scale(${sc})`);
     zoomL.textContent = Math.round(sc * 100) + '%';
   };
   const vpSize = () => ({ w: vp.clientWidth, h: vp.clientHeight });
@@ -185,7 +216,7 @@ function createDiagram(host, spec, opts = {}) {
   vp.addEventListener('wheel', e => { const r = vp.getBoundingClientRect();
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * .0025)); }
     else if (full) { e.preventDefault(); tx -= e.deltaX; ty -= e.deltaY; userMoved = true; apply(); } }, { passive: false });
-  vp.addEventListener('click', e => { if ((e.target === vp || e.target === world || e.target.closest('.dg-bg,.dg-zone')) && !dragged && selected) closePanel(); });
+  vp.addEventListener('click', e => { if ((e.target === vp || e.target === world || e.target.closest('.dg-zone')) && !dragged && selected) closePanel(); });
 
   new ResizeObserver(() => { setH(); if (!userMoved) fit(); }).observe(root);
   setH(); fit();
@@ -205,7 +236,8 @@ dlg.addEventListener('close', () => { dlgHost.innerHTML = ''; dlgOpener?.focus?.
    DIAGRAMS.x = { type: 'sequence' | 'timeline' | 'compare', … }
    ===================================================================== */
 const VERDICT = { good: 'good', mid: 'warning', bad: 'critical' };
-const verdict = k => `<span class="cp-v">${chartMark(VERDICT[k])}<span>${{ good: T.strong, mid: T.soso, bad: T.weak }[k]}</span></span>`;
+const VERDICT_WORD = { good: () => T.strong, mid: () => T.soso, bad: () => T.weak };
+const cmpValue = c => c[2] || VERDICT_WORD[c[0]]();
 const dvBtn = (i, label, cls) => `<button type="button" class="${cls} dv-item" data-i="${i}" aria-pressed="false" aria-label="${esc(label)}">`;
 
 const PANEL_TYPES = {
@@ -229,14 +261,17 @@ const PANEL_TYPES = {
     detail: (s, i) => { const it = s.items[i]; return { k: `${it.date}${it.now ? ' · ' + T.inProgress : ''}`, t: it.title, body: `<p>${esc(it.what || '')}</p>` }; }
   },
   compare: {
-    items: s => s.rows.map(r => ({ title: r.label, text: `${r.label} ${r.what || ''} ${s.options.map(o => r.cells[o.id][1]).join(' ')}` })),
+    /* cells[option] = [verdict, why, value]: the value (Alto, Dopo 3 settimane) leads, the why sits under it */
+    items: s => s.rows.map(r => ({ title: r.label, text: `${r.label} ${r.what || ''} ${s.options.map(o => `${r.cells[o.id][2] || ''} ${r.cells[o.id][1]}`).join(' ')}` })),
     html(s) {
       const O = s.options, n = O.length;
-      const grid = `<div class="cp-grid" style="--n:${n}"><div></div>${O.map(o => `<div class="cp-h"><b>${esc(o.label)}</b>${o.sub ? `<span>${esc(o.sub)}</span>` : ''}</div>`).join('')}${s.rows.map((r, i) => `${dvBtn(i, `${r.label}: ${T.details.toLowerCase()}`, 'cp-r')}<span class="cp-l">${esc(r.label)}</span>${O.map(o => `<span class="cp-c">${verdict(r.cells[o.id][0])}</span>`).join('')}</button>`).join('')}${s.when ? `<div class="cp-r cp-when"><span class="cp-l">${T.whenToChoose}</span>${O.map(o => `<span class="cp-c"><span class="cp-tx">${esc(s.when[o.id] || '')}</span></span>`).join('')}</div>` : ''}</div>`;
-      const cards = `<div class="cp-cards">${O.map(o => `<section class="cp-card"><h4>${esc(o.label)}${o.sub ? ` <span>${esc(o.sub)}</span>` : ''}</h4><div class="cp-list">${s.rows.map((r, i) => `${dvBtn(i, `${o.label}, ${r.label}: ${T.details.toLowerCase()}`, 'cp-cl')}<span class="cp-k">${esc(r.label)}</span><span class="cp-vv">${verdict(r.cells[o.id][0])}</span></button>`).join('')}${s.when ? `<div class="cp-cl"><span class="cp-k">${T.whenToChoose}</span><span class="cp-vv"><span class="cp-tx">${esc(s.when[o.id] || '')}</span></span></div>` : ''}</div></section>`).join('')}</div>`;
+      const head = o => `<div class="cp-h${s.recommend === o.id ? ' rec' : ''}">${s.recommend === o.id ? `<em class="cp-rec">${T.recommended}</em>` : ''}<b>${esc(o.label)}</b>${o.sub ? `<span>${esc(o.sub)}</span>` : ''}</div>`;
+      const cell = c => `<span class="cp-c cp-${c[0]}"><span class="cp-val">${chartMark(VERDICT[c[0]])}${esc(cmpValue(c))}<span class="sr"> (${VERDICT_WORD[c[0]]()})</span></span><span class="cp-why">${esc(c[1])}</span></span>`;
+      const grid = `<div class="cp-grid" style="--n:${n}"><div></div>${O.map(head).join('')}${s.rows.map((r, i) => `${dvBtn(i, `${r.label}: ${T.details.toLowerCase()}`, 'cp-r')}<span class="cp-l">${esc(r.label)}</span>${O.map(o => cell(r.cells[o.id])).join('')}</button>`).join('')}${s.when ? `<div class="cp-r cp-when"><span class="cp-l">${T.whenToChoose}</span>${O.map(o => `<span class="cp-c"><span class="cp-why">${esc(s.when[o.id] || '')}</span></span>`).join('')}</div>` : ''}</div>`;
+      const cards = `<div class="cp-cards">${O.map(o => `<section class="cp-card${s.recommend === o.id ? ' rec' : ''}">${head(o)}${s.rows.map((r, i) => `${dvBtn(i, `${o.label}, ${r.label}`, 'cp-cr')}<span class="cp-k">${esc(r.label)}</span>${cell(r.cells[o.id])}</button>`).join('')}${s.when ? `<p class="cp-w"><span class="cp-k">${T.whenToChoose}</span>${esc(s.when[o.id] || '')}</p>` : ''}</section>`).join('')}</div>`;
       return grid + cards;
     },
-    detail(s, i) { const r = s.rows[i]; return { k: `${T.criterion} ${i + 1} ${T.of} ${s.rows.length}`, t: r.label, body: `${r.what ? `<p>${esc(r.what)}</p>` : ''}<dl class="pn-f">${s.options.map(o => { const [k, t] = r.cells[o.id]; return `<div><dt>${esc(o.label)}</dt><dd class="cp-dd">${verdict(k)}<span>${esc(t)}</span></dd></div>`; }).join('')}</dl>` }; }
+    detail(s, i) { const r = s.rows[i]; return { k: `${T.criterion} ${i + 1} ${T.of} ${s.rows.length}`, t: r.label, body: `${r.what ? `<p>${esc(r.what)}</p>` : ''}<dl class="pn-f">${s.options.map(o => { const c = r.cells[o.id]; return `<div><dt>${esc(o.label)}</dt><dd class="cp-dd"><span class="cp-v">${chartMark(VERDICT[c[0]])}<span>${esc(cmpValue(c))}</span></span><span>${esc(c[1])}</span></dd></div>`; }).join('')}</dl>` }; }
   }
 };
 const diagramItems = spec => PANEL_TYPES[spec.type] ? PANEL_TYPES[spec.type].items(spec) : spec.nodes.map(n => ({ title: n.title, text: `${n.title} ${n.sub || ''} ${n.what}` }));
@@ -516,7 +551,6 @@ document.addEventListener('keydown', e => {
 });
 setRail(store.get('guide.sidebar') === 'rail', { save: false });
 
-const darkQ = matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
   $$('[role=switch].theme-btn, [role=switch].theme-bar').forEach(b => b.setAttribute('aria-checked', String(t === 'dark')));
@@ -525,8 +559,7 @@ $$('.theme-btn, .theme-bar').forEach(b => b.addEventListener('click', () => {
   const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(t); store.set('guide.theme', t); announce(t === 'dark' ? T.darkOn : T.darkOff);
 }));
-darkQ.addEventListener('change', e => { if (!store.get('guide.theme')) applyTheme(e.matches ? 'dark' : 'light'); });
-applyTheme(document.documentElement.dataset.theme || (darkQ.matches ? 'dark' : 'light'));
+applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'); /* light unless the reader chose dark */
 
 syncBar();
 { const r = parseRoute(); render(r.page, r.sec, { first: true }); }

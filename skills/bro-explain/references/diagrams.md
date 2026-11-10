@@ -12,7 +12,7 @@ Five types, all placed with `${figure('id', 'Title', 'Description')}` and define
 
 A plain list of items is not a diagram. Pick a diagram only when the shape adds something the text cannot.
 
-Architecture and flow are **node diagrams**: pan, zoom, full screen, a details panel over the canvas. Sequence, timeline and comparison **fit the width**: no pan or zoom, every item is a button, and the details panel opens under the drawing.
+Architecture and flow are **node diagrams**: pan, zoom, full screen, a details panel over the canvas, right-angle edges. Sequence, timeline and comparison **fit the width**: no pan or zoom, every item is a button, and the details panel opens under the drawing.
 
 # Node diagrams (architecture, flow)
 
@@ -58,16 +58,16 @@ edges: [{ from: 'd1', to: 'hit', label: 'yes', fs: 'l', ts: 't' }]
 
 Coordinates are absolute, top-left of each node. Place nodes on a grid; the engine draws curved edges between ports.
 
-- **Architecture**: zones as full-width bands, `h ≈ nodeH + 32`, 16 px gap between bands. Nodes 40 px apart horizontally (`x` step = `nodeW + 40`); leave ~130 px on the left of each band for the zone label. Example: `nodeW 204`, columns at `x = 140, 384, 628`, band `y = 0, 122, 244, 366`, node `y = band y + 16`.
+- **Architecture**: you do not place anything. The engine turns each zone into a column, left to right in `zones` order, and stacks the blocks of a zone top to bottom in `x` order (blocks without `x` keep their array order). So order the zones as the request travels (outside world → entry → services → data) and give each block an `x` only to set its place in the column. Zone and block coordinates, `w`, `h`, `fs` and `ts` are ignored: edges between columns always leave right and arrive left. 3–4 zones, at most 4 blocks per zone.
 - **Flow**: one column for the main path, branches to the left and right. `nodeW 240`, `nodeH 82`, vertical step 112 (`nodeH + 30`), branch columns at `x = 0` and `x = 540` with the main column at `x = 270`. Branches rejoin into the next main node with `fs: 'b'` and `ts: 'l'` / `'r'`.
-- `w` / `h` = right / bottom edge of the furthest node or zone.
+- Flow: `w` / `h` = right / bottom edge of the furthest node.
 - Keep titles short (they wrap to two lines in the node). Put detail in `what`.
 - 5–12 nodes per diagram. More than that: split into two diagrams or move detail to text.
 - On phones the diagram opens at a readable zoom, centred on the first node; the reader drags or uses Full screen. Check the 375 px screenshot: the first node must be visible and readable.
 
 ## Colour
 
-Colour in diagrams means a node **kind** and nothing else. Architecture zones stay neutral: their label and position say which zone a block is in. Do not invent new kind colours: three tints is the limit for colours that stay distinguishable for colour-blind readers, and the neutral step keeps the exceptions visible.
+Colour in a diagram means a category and nothing else. In a flow it is the node **kind**; in an architecture it is the **zone**: each column gets a categorical colour (c1, c2, c3 in order; with four zones the first, usually the outside world, stays neutral), shown as the column tint, its top bar and the top edge of its blocks. The zone name is always written at the top of the column, so the colour never carries the meaning alone. Do not invent new colours: three tints is the limit for colours that stay distinguishable for colour-blind readers.
 
 # Sequence
 
@@ -107,14 +107,16 @@ Colour in diagrams means a node **kind** and nothing else. Architecture zones st
 stores: {
   type: 'compare', title: 'Where to keep data',
   options: [{ id: 'db', label: 'Database', sub: 'the main copy' }, …],          // 2 or 3 options
+  recommend: 'db',                                                               // optional: highlights the option you recommend
   rows: [
     { label: 'Speed', what: 'What the criterion means.', cells: {
-      db: ['mid', 'Fast, but slower than memory.'], cache: ['good', '…'], queue: ['good', '…'] } }
+      db: ['mid', 'Disk is slower than memory.', 'Fast'], cache: ['good', 'The data is in memory.', 'Very fast'], … } }
   ],
   when: { db: 'The main copy of your data.', … }                               // optional last row
 }
 ```
 
-- Each cell is `[verdict, text]` with verdict `'good'`, `'mid'` or `'bad'`: the table shows icon + word, the panel shows the text for every option side by side.
-- Phrase each criterion so that "good" is good for the reader (write "Speed", not "Latency").
+- Each cell is `[verdict, why, value]`. The **value** is the fact in two to four words (`Alto`, `Dopo 3 settimane`, `≈ 16 settimane`, `No`) and is what the reader sees first, in bold; the **why** is one short sentence under it. The verdict (`'good'`, `'mid'`, `'bad'`) only tints the cell and picks the icon. Without a value the cell falls back to the verdict word, which tells the reader nothing: always write one.
+- Name each criterion neutrally (`Rischio in produzione`, `Primo beneficio`), not as a goal (`Rischio basso`): the value then reads naturally next to it, and nobody has to decode "low risk: weak point".
+- Use `recommend` in an analysis that ends with a choice; leave it out when you only compare.
 - 3–6 criteria. More than that: split the comparison or use a table.

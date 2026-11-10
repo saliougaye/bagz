@@ -41,6 +41,8 @@ ${contentsIndex()}`
 - Every `h2`/`h3` needs a unique `id` within the page. Only direct children of the body count for "On this page".
 - Text inside the template literal is HTML: escape `<`, `>` and `&` in prose and code (`&lt;`), and never write `</script` (use `<\/script`).
 - The home page should end with `${contentsIndex()}`: it lists every page with its `line`, grouped as in the sidebar.
+- `lead` says what question the page answers and how it follows from the previous page. `line` says what the reader gets from the page.
+- Put a sentence of prose before every table, list, figure or chart: what it shows and what to look at.
 
 ## NAV
 
@@ -126,4 +128,4 @@ ${chart({
 
 - Write the guide in the language the user writes to you in. `GUIDE.lang` sets the UI strings and `<html lang>` to match.
 - A language missing from `assets/template/i18n.json`: add a block with the same keys as `en` before building.
-- The plain-language rules apply in every language: short sentences, active voice, one term per concept. Keep the technical words the reader will see on screen (`playbook`, `task`, `changed`) and explain them once.
+- The voice rules in `SKILL.md` apply in every language: plain words, sentences that connect, one term per concept. Keep the technical words the reader will see on screen (`playbook`, `task`, `changed`) and explain them the first time.
