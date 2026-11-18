@@ -7,6 +7,7 @@ My agent skills (Claude Code and compatible agents). Each skill is a folder in `
 | [`bro-explain`](skills/bro-explain/SKILL.md) | Turns a topic or a decision to analyse into a self-contained, offline HTML guide in my house style: sidebar with search, an explanation that builds step by step in plain, flowing language, interactive diagrams, charts, light theme with optional dark mode. | "guide", "explainer", "explain X", "walk me through", "analyse", "should I…", "which is better", "HTML doc", "page to present" |
 | [`swag-it-out`](skills/swag-it-out/SKILL.md) | Proposes a UI for a project or a feature with several variants to compare, either as a standalone HTML mockup or as throwaway variants inside the running app. Builds the variants itself, explains them in an info panel on the picker, and calls my usual design skills: `design-taste-frontend`, `better-ui`, `emil-design-eng`, and `web-design-engineer` for web projects. | "mockup", "mock up the UI", "propose a UI for…", "how could this screen look", "try variants in the app" |
 | [`bless-this-pr`](skills/bless-this-pr/SKILL.md) | Approves a GitHub PR with a GIF. | "FDA", "approve this PR" |
+| [`feds-knockin-pr`](skills/feds-knockin-pr/SKILL.md) | Reviews a GitHub PR the way I do: scrutiny that depends on the kind of PR, questioning comments and suggestions, and nothing posted until I approve the draft. | "review this PR", "look at this PR" |
 
 ## Install a skill
 
