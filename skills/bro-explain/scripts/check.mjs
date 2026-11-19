@@ -61,8 +61,8 @@ for (const scheme of ['light', 'dark']) for (const w of widths) {
         root.querySelector('.pn-x')?.click();
       }
       for (const root of document.querySelectorAll('#main .dv')) {
-        const it = [...root.querySelectorAll('.dv-item')].find(b => b.offsetParent); if (!it) { dg.push('panel diagram without visible items'); continue; }
-        it.scrollIntoView({ block: 'center' }); it.click(); await new Promise(r => setTimeout(r, 200));
+        const it = [...root.querySelectorAll('.dv-item')].find(b => b.getClientRects().length && b.getAttribute('tabindex') !== '-1'); if (!it) { dg.push('panel diagram without visible items'); continue; }
+        it.scrollIntoView({ block: 'center' }); it.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 200));
         const pn = root.querySelector('.dv-pn'); if (!pn || pn.hidden) dg.push('panel did not open for a ' + root.className.split(' ')[1]);
         pn?.querySelector('.pn-x')?.click();
       }

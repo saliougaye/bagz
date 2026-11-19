@@ -32,9 +32,9 @@ ${contentsIndex()}` },
 <p>A block is a program or a server with one job, such as finding addresses or keeping data. The blocks talk to each other over the network, so each one can be replaced, copied or restarted without touching the others. That is the whole reason to split an application this way.</p>
 <p>A small application may run several blocks on the same server, while a large one runs many copies of each. The jobs stay the same either way, so the map below fits both.</p>
 <h2 id="diagram">The map</h2>
-<p>The diagram groups the nine blocks into four zones, from the user's device on the left to the data on the right. Read it left to right: that is roughly the order in which the request for order 1042 meets them.</p>
+<p>The map puts the nine blocks in four zones. The client and the edge sit on the left, and your servers are the platform on the right, with the application and the data as two coloured groups on it. Read it from left to right: that is roughly the order in which the request for order 1042 meets them. The shape of a block tells you what it is, so the stacks are the three blocks that keep data.</p>
 ${figure('arch', 'The main blocks of a web application', 'Nine blocks in four zones. Select a block to see its job, whether it keeps data, and what it connects to.')}
-<p>You can drag the map, zoom it, or open it full screen for a projector. With the keyboard, Tab moves between blocks, the arrow keys jump to the nearest one, and Enter opens its details.</p>
+<p>With the keyboard, Tab moves between blocks, the arrow keys jump to the nearest one, and Enter opens its details. On a phone the map becomes an overview, with the blocks listed under it by zone.</p>
 <h2 id="zones">The four zones</h2>
 <p>A zone tells you where a block runs, which in turn tells you who controls it and what happens when it fails.</p>
 <h3 id="client">Client</h3>
@@ -351,24 +351,24 @@ const DIAGRAMS = {
     when: { db: 'The main copy of your data.', cache: 'Copies of data that you read frequently.', queue: 'Work that can happen later.' }
   },
   arch: {
-    title: 'The main blocks of a web application', nodeW: 204, nodeH: 74, w: 856, h: 472,
-    hint: 'Drag to move · Ctrl or ⌘ + scroll to zoom · Tab and arrow keys to move between blocks',
+    type: 'iso', title: 'The main blocks of a web application',
     zones: [
-      { id: 'client', title: 'Client', x: 0, y: 0, w: 856, h: 106 },
-      { id: 'edge', title: 'Edge', x: 0, y: 122, w: 856, h: 106 },
-      { id: 'app', title: 'Application', x: 0, y: 244, w: 856, h: 106 },
-      { id: 'data', title: 'Data', x: 0, y: 366, w: 856, h: 106 }
+      { id: 'client', title: 'Client' },
+      { id: 'edge', title: 'Edge' },
+      { id: 'servers', title: 'Your servers' },
+      { id: 'app', title: 'Application', in: 'servers', tone: 'c1', cols: 2 },
+      { id: 'data', title: 'Data', in: 'servers', tone: 'c2', cols: 3 }
     ],
     nodes: [
-      { id: 'browser', zone: 'client', x: 384, y: 16, title: 'Browser', sub: 'Shows the page', what: 'The browser is the program on the computer or phone of the user. It sends requests and shows the pages that come back. It keeps some files for a short time, so that it does not ask for them again.', fields: [['Keeps data', 'A copy of files, for a short time.']] },
-      { id: 'dns', zone: 'edge', x: 140, y: 138, title: 'DNS', sub: 'Finds the server address', what: 'DNS changes a name, for example shop.example.com, into an IP address. The browser needs this address to send a request. DNS does not see the request itself.', fields: [['Keeps data', 'No application data.']] },
-      { id: 'cdn', zone: 'edge', x: 384, y: 138, title: 'CDN', sub: 'Keeps copies of files', what: 'A CDN is a set of servers in many countries. Each server keeps copies of files that do not change frequently, for example images and styles. The user gets these files from a server that is near.', fields: [['Keeps data', 'A copy of files, for a short time.']] },
-      { id: 'lb', zone: 'edge', x: 628, y: 138, title: 'Load balancer', sub: 'Shares the requests', what: 'The load balancer receives each request that the CDN cannot answer. It sends the request to one application server that is ready. If an application server stops, the load balancer stops sending requests to it.', fields: [['Keeps data', 'No.']] },
-      { id: 'app', zone: 'app', x: 384, y: 260, title: 'Application server', sub: 'Runs the code', what: 'The application server runs the code of the application. It reads the request, gets the data and makes the response. Most applications have two or more application servers.', fields: [['Keeps data', 'No. It must not keep data between two requests.']] },
-      { id: 'worker', zone: 'app', x: 628, y: 260, title: 'Worker', sub: 'Does long tasks later', what: 'The worker does tasks that take a long time, for example emails and reports. It gets each task from the queue. The user does not wait for the worker.', fields: [['Keeps data', 'No.']] },
-      { id: 'cache', zone: 'data', x: 140, y: 382, title: 'Cache', sub: 'Keeps frequent data', what: 'The cache keeps data that the application reads frequently. It keeps this data in memory, and memory is faster than a disk. If the cache stops, you do not lose data.', fields: [['Keeps data', 'A copy, for a short time.']] },
-      { id: 'db', zone: 'data', x: 384, y: 382, title: 'Database', sub: 'Keeps the data', what: 'The database keeps the data of the application, for example users and orders. It is the one block that must not lose data. Make a backup of the database every day.', fields: [['Keeps data', 'Yes. The main copy of the data.']] },
-      { id: 'queue', zone: 'data', x: 628, y: 382, title: 'Queue', sub: 'Holds tasks in order', what: 'The queue keeps a list of tasks for the worker. The application server adds a task. The worker removes the task when it is complete. If the worker stops, the tasks stay in the queue.', fields: [['Keeps data', 'Yes, until the worker completes the task.']] }
+      { id: 'browser', zone: 'client', kind: 'device', icon: 'desktop', title: 'Browser', sub: 'Shows the page', what: 'The browser is the program on the computer or phone of the user. It sends requests and shows the pages that come back. It keeps some files for a short time, so that it does not ask for them again.', fields: [['Keeps data', 'A copy of files, for a short time.']] },
+      { id: 'dns', zone: 'edge', kind: 'network', icon: 'globe', title: 'DNS', sub: 'Finds the server address', what: 'DNS changes a name, for example shop.example.com, into an IP address. The browser needs this address to send a request. DNS does not see the request itself.', fields: [['Keeps data', 'No application data.']] },
+      { id: 'cdn', zone: 'edge', icon: 'cloud', title: 'CDN', sub: 'Keeps copies of files', what: 'A CDN is a set of servers in many countries. Each server keeps copies of files that do not change frequently, for example images and styles. The user gets these files from a server that is near.', fields: [['Keeps data', 'A copy of files, for a short time.']] },
+      { id: 'lb', zone: 'edge', kind: 'network', icon: 'gateway', title: 'Load balancer', sub: 'Shares the requests', what: 'The load balancer receives each request that the CDN cannot answer. It sends the request to one application server that is ready. If an application server stops, the load balancer stops sending requests to it.', fields: [['Keeps data', 'No.']] },
+      { id: 'app', zone: 'app', icon: 'code', title: 'App server', sub: 'Runs the code', what: 'The application server runs the code of the application. It reads the request, gets the data and makes the response. Most applications have two or more application servers.', fields: [['Keeps data', 'No. It must not keep data between two requests.']] },
+      { id: 'worker', zone: 'app', icon: 'gear', title: 'Worker', sub: 'Does long tasks later', what: 'The worker does tasks that take a long time, for example emails and reports. It gets each task from the queue. The user does not wait for the worker.', fields: [['Keeps data', 'No.']] },
+      { id: 'cache', zone: 'data', kind: 'data', icon: 'cache', title: 'Cache', sub: 'Keeps frequent data', what: 'The cache keeps data that the application reads frequently. It keeps this data in memory, and memory is faster than a disk. If the cache stops, you do not lose data.', fields: [['Keeps data', 'A copy, for a short time.']] },
+      { id: 'db', zone: 'data', kind: 'data', title: 'Database', sub: 'Keeps the data', what: 'The database keeps the data of the application, for example users and orders. It is the one block that must not lose data. Make a backup of the database every day.', fields: [['Keeps data', 'Yes. The main copy of the data.']] },
+      { id: 'queue', zone: 'data', kind: 'data', icon: 'queue', title: 'Queue', sub: 'Holds tasks in order', what: 'The queue keeps a list of tasks for the worker. The application server adds a task. The worker removes the task when it is complete. If the worker stops, the tasks stay in the queue.', fields: [['Keeps data', 'Yes, until the worker completes the task.']] }
     ],
     edges: [
       { from: 'browser', to: 'dns', text: 'asks for the IP address' },

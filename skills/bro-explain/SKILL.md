@@ -36,7 +36,7 @@ A guide is read in order the first time and looked up later. Write it for the fi
 
 The home page names the question, gives the short answer and the big picture, says how to read the guide, and ends with the contents index. Then as many pages as the topic needs, each one a step of the path. A small topic is a home page and two pages; a large one can have dozens, grouped by what the reader is trying to do. Reference material (glossary, all notices, command cheat-sheet) goes at the end, after the path.
 
-A diagram only when it shows something text cannot: an architecture (blocks in zones), a flow (steps and decisions), a sequence (who talks to whom, in order), a timeline (events or phases in order), or a comparison (two or three options judged on the same criteria). A chart only for a real comparison of a few numbers. Neither is decoration.
+A diagram only when it shows something text cannot: an architecture (what runs where: machines, groups and blocks, drawn in 3D), a flow (steps and decisions), a sequence (who talks to whom, in order), a timeline (events or phases in order), or a comparison (two or three options judged on the same criteria). A chart only for a real comparison of a few numbers. Neither is decoration.
 
 Before you finish, read the guide top to bottom as the reader would. Every paragraph should follow from the one before it. Where you jump, add the missing step or the joining sentence.
 

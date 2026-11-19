@@ -63,7 +63,7 @@ The reading order (prev/next, "Start with…") follows NAV top to bottom. Every 
 
 ## DIAGRAMS
 
-An object keyed by diagram id, `{}` when the guide has none. Five types: node diagrams (architecture, flow), `sequence`, `timeline`, `compare`. Spec formats: `references/diagrams.md`. Place a diagram with `${figure('arch', 'Title', 'One sentence: what it shows and what to select.')}`.
+An object keyed by diagram id, `{}` when the guide has none. Five types: architecture (`iso`), flow (a node diagram), `sequence`, `timeline`, `compare`. Spec formats: `references/diagrams.md`. Place a diagram with `${figure('arch', 'Title', 'One sentence: what it shows and what to select.')}`.
 
 ## Building blocks
 

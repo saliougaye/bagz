@@ -63,7 +63,7 @@ Contrast: text 15.3:1, secondary 6.0:1 (light); text 17.1:1, secondary 7.9:1 (da
 ## Node diagrams
 
 - Canvas: the sheet, no grid. Edges are right-angle with 12 px rounded corners.
-- Architecture: zones are columns, read left to right. Each column is tinted with its zone colour (7%), has a 5 px top bar in that colour and an uppercase 13 px title in ink at the top; its blocks get a 4 px top edge in the same colour. Zone colours = categorical c1, c2, c3 (neutral `--k-step` for the first of four).
+- Older column architecture (no `type`): zones are columns, read left to right. Each column is tinted with its zone colour (7%), has a 5 px top bar in that colour and an uppercase 13 px title in ink at the top; its blocks get a 4 px top edge in the same colour. Zone colours = categorical c1, c2, c3 (neutral `--k-step` for the first of four).
 - Flow: no zones; kinds as below.
 - Node: background `--node-bg`, 1 px border `--node-line`, radius 10, title 17 px / 650, subtitle 14.5 px `--muted`.
 - **Node kinds**: SVG shape + colour + name, the same in node, legend and panel.
@@ -80,6 +80,15 @@ Contrast: text 15.3:1, secondary 6.0:1 (light); text 17.1:1, secondary 7.9:1 (da
 - At most three categorical tints per diagram; beyond that, rely on shape and name.
 - Controls: zoom − / + / Fit, Full screen. No list view: on phones the canvas opens centred on the first node.
 - Keyboard: Tab between nodes, arrows to the nearest node, Enter opens the details, Esc closes.
+
+## Architecture (iso)
+
+- True isometric view (30°), rising from bottom left to top right; the drawing fits the width of the figure and text keeps 13–15 px on screen whatever the scale.
+- Blocks are low (7–27 units): slab for a service, a stack of three thin slabs for data, a round puck for the network, a thin slab for a device. The pictogram (24-unit grid, 1.7 px stroke, tone mixed 35% into ink) is printed flat on the top face; the name sits in an upright card above the block (sheet fill, 1 px `--line-strong`, radius 6, 14.5 px / 650).
+- Faces tint the zone colour over the sheet: top 15%, left 32%, right 50% in light; 36 / 16 / 24% in dark. The machine is a neutral platform (7%), groups are trays (15%) on it.
+- Zone titles are printed flat on the floor along the zone's edge: 13 px, bold, uppercase, tracking 0.07em, in ink.
+- Lines on the ground 2 px `--edge`, dashed for what runs on demand. Selection: 3 px ring and the card border in `--edge-on`, the block lifts 5 px, the rest dims to 38%.
+- Below 600 px of container: overview without text, the blocks as buttons grouped by zone under it.
 
 ## Sequence, timeline, comparison
 

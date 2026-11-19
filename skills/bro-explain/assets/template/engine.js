@@ -231,9 +231,10 @@ $('#dg-dialog-x').addEventListener('click', () => dlg.close());
 dlg.addEventListener('close', () => { dlgHost.innerHTML = ''; dlgOpener?.focus?.(); });
 
 /* =====================================================================
-   SEQUENCE, TIMELINE, COMPARISON: fit-to-width diagrams. Items are
+   SEQUENCE, TIMELINE, COMPARISON, ISO: fit-to-width diagrams. Items are
    buttons; selecting one opens a details panel under the drawing.
-   DIAGRAMS.x = { type: 'sequence' | 'timeline' | 'compare', … }
+   DIAGRAMS.x = { type: 'sequence' | 'timeline' | 'compare' | 'iso', … }
+   A type may add mount(root, spec) after drawing and onOpen(root, spec, i | null).
    ===================================================================== */
 const VERDICT = { good: 'good', mid: 'warning', bad: 'critical' };
 const VERDICT_WORD = { good: () => T.strong, mid: () => T.soso, bad: () => T.weak };
@@ -274,28 +275,271 @@ const PANEL_TYPES = {
     detail(s, i) { const r = s.rows[i]; return { k: `${T.criterion} ${i + 1} ${T.of} ${s.rows.length}`, t: r.label, body: `${r.what ? `<p>${esc(r.what)}</p>` : ''}<dl class="pn-f">${s.options.map(o => { const c = r.cells[o.id]; return `<div><dt>${esc(o.label)}</dt><dd class="cp-dd"><span class="cp-v">${chartMark(VERDICT[c[0]])}<span>${esc(cmpValue(c))}</span></span><span>${esc(c[1])}</span></dd></div>`; }).join('')}</dl>` }; }
   }
 };
+/* =====================================================================
+   ISO: a system map in isometric view, rising from bottom left to top right.
+   Top-level zones sit on the floor, left to right; a zone that other zones
+   are `in` is a machine (a platform) and those zones are coloured groups on it.
+   Each block is a low shape that says its kind, with a pictogram printed on
+   top and an upright name card above. Fits the width, details under it.
+   DIAGRAMS.x = { type: 'iso', title, zones: [...], nodes: [...], edges: [...] }
+   ===================================================================== */
+/* pictograms on a 24-unit grid, generic on purpose: no product logos */
+const ISO_ICONS = {
+  app: 'M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z M4 7.5l8 4.5 8-4.5 M12 12v9',
+  server: 'M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01',
+  db: 'M5 6a7 3 0 1 0 14 0a7 3 0 1 0-14 0 M5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6 M5 12c0 1.7 3 3 7 3s7-1.3 7-3',
+  disk: 'M3 8h18v8H3z M7 12h.01 M17 12h-6',
+  drive: 'M5 4h14v16H5z M9 8h6 M9 12h6 M12 17h.01',
+  cloud: 'M7 18h10a4 4 0 0 0 0-8a6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z',
+  network: 'M6 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M18 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M18 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M8 11l8-4 M8 13l8 4',
+  gateway: 'M5 20V9a7 7 0 0 1 14 0v11 M2 20h20 M9 14h6 M13 12l2 2-2 2',
+  globe: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18',
+  shield: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',
+  laptop: 'M4 6h16v10H4z M2 19h20',
+  phone: 'M8 3h8v18H8z M11 18h2',
+  desktop: 'M3 4h18v12H3z M8 20h8 M12 16v4',
+  user: 'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M4 21c1-5 15-5 16 0',
+  chip: 'M7 7h10v10H7z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4',
+  media: 'M3 5h18v14H3z M10 9l5 3-5 3z',
+  photo: 'M3 5h18v14H3z M3 16l5-5 4 4 3-3 6 5 M16 9h.01',
+  doc: 'M6 3h9l4 4v14H6z M15 3v4h4 M9 12h7 M9 16h7',
+  code: 'M9 7l-5 5 5 5 M15 7l5 5-5 5',
+  api: 'M9 4c-3 0-3 2-3 4s-1 4-3 4c2 0 3 2 3 4s0 4 3 4 M15 4c3 0 3 2 3 4s1 4 3 4c-2 0-3 2-3 4s0 4-3 4',
+  terminal: 'M3 5h18v14H3z M7 10l3 2-3 2 M12 15h5',
+  pulse: 'M2 12h5l3-7 4 14 3-7h5',
+  dashboard: 'M3 4h18v12H3z M8 20h8 M6 12l3-3 3 2 4-4',
+  chart: 'M3 21h18 M6 21v-7 M11 21V9 M16 21v-5',
+  map: 'M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z M12 10h.01',
+  person: 'M5 3h14v18H5z M9.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M8 17c1-3 7-3 8 0',
+  search: 'M4 10a6 6 0 1 0 12 0a6 6 0 1 0-12 0 M15 15l6 6',
+  lock: 'M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4 M12 15v2',
+  key: 'M3 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M11 12h10 M18 12v3 M21 12v2',
+  mail: 'M3 6h18v12H3z M3 6l9 7 9-7',
+  queue: 'M3 8h4v8H3z M10 8h4v8h-4z M17 8h4v8h-4z',
+  cache: 'M13 3 5 13h6l-1 8 8-10h-6z',
+  gear: 'M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9 7 7 M17 17l2.1 2.1 M4.9 19.1 7 17 M17 7l2.1-2.1',
+  bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z M10 21h4',
+  home: 'M3 11l9-7 9 7 M6 9v11h12V9'
+};
+/* kind → shape: the shape tells what a block is, the colour where it runs */
+const ISO_KINDS = { service: { shape: 'slab', icon: 'app' }, data: { shape: 'stack', icon: 'db' }, network: { shape: 'puck', icon: 'network' }, device: { shape: 'thin', icon: 'laptop' } };
+const ISO_KIND_T = { service: () => T.isoService, data: () => T.isoData, network: () => T.isoNetwork, device: () => T.isoDevice };
+const ISO_KG = {
+  service: '<path d="M2 8l7-3.5 7 3.5-7 3.5z M2 8v3l7 3.5 7-3.5V8"/>',
+  data: '<path d="M2 5.5l7-3.5 7 3.5-7 3.5z M2 9l7 3.5 7-3.5 M2 12.5l7 3.5 7-3.5"/>',
+  network: '<ellipse cx="9" cy="7.5" rx="7" ry="3.5"/><path d="M2 7.5v3c0 1.9 3.1 3.5 7 3.5s7-1.6 7-3.5v-3"/>',
+  device: '<path d="M2 9l7-3.5 7 3.5-7 3.5z M2 9v1.5l7 3.5 7-3.5V9"/>'
+};
+const ISO = { BW: 84, BD: 84, PX: 120, PY: 142, M: 26, MF: 60, TG: 90, ZG: 84, AX: [0.866, -0.5], AY: [0.866, 0.5] };
+const isoP = (x, y, z) => [x * ISO.AX[0] + y * ISO.AY[0], x * ISO.AX[1] + y * ISO.AY[1] - z];
+const isoPts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+const isoArea = q => q.reduce((s, p, i) => { const n = q[(i + 1) % q.length]; return s + p[0] * n[1] - n[0] * p[1]; }, 0) / 2;
+function isoHull(P0) {
+  const p = [...P0].sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
+  for (const q of p) { while (lo.length > 1 && cr(lo.at(-2), lo.at(-1), q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()) { while (up.length > 1 && cr(up.at(-2), up.at(-1), q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+/* a box: the sides that face the viewer (same winding as the top), then the top */
+function isoBox({ x, y, z, w, d, h }) {
+  const zt = z + h, g = [[x, y], [x + w, y], [x + w, y + d], [x, y + d]], top = g.map(q => isoP(...q, zt)), sT = Math.sign(isoArea(top));
+  const sides = g.map((a, i) => { const c = g[(i + 1) % 4], p = [isoP(...a, z), isoP(...c, z), isoP(...c, zt), isoP(...a, zt)]; return { p, ar: isoArea(p), cx: p.reduce((m, q) => m + q[0], 0) / 4 }; })
+    .filter(s => Math.sign(s.ar) === sT && Math.abs(s.ar) > .5).sort((m, n) => m.cx - n.cx);
+  return { svg: sides.map((s, i) => `<polygon class="is-f ${i ? 'is-r' : 'is-l'}" points="${isoPts(s.p)}"/>`).join('') + `<polygon class="is-f is-top" points="${isoPts(top)}"/>`, pts: g.map(q => isoP(...q, z)).concat(top) };
+}
+function isoCyl(cx, cy, r, z, h) {
+  const ring = zz => Array.from({ length: 49 }, (_, i) => { const a = i / 48 * Math.PI * 2; return isoP(cx + r * Math.cos(a), cy + r * Math.sin(a), zz); });
+  const top = ring(z + h), all = ring(z).concat(top), mid = isoP(cx, cy, z)[0];
+  return { svg: `<polygon class="is-f is-r" points="${isoPts(isoHull(all))}"/><polygon class="is-f is-l" points="${isoPts(isoHull(all.filter(p => p[0] <= mid + .01)))}"/><polygon class="is-f is-top" points="${isoPts(top)}"/>`, pts: all };
+}
+/* the pictogram lies flat on the top face: icon x along world x, icon y along world y */
+function isoIcon(name, cx, cy, zt, s) {
+  const k = s / 24, o = isoP(cx - s / 2, cy - s / 2, zt), m = [ISO.AX[0] * k, ISO.AX[1] * k, ISO.AY[0] * k, ISO.AY[1] * k].map(v => v.toFixed(4)).join(' ');
+  return `<g transform="matrix(${m} ${o[0].toFixed(1)} ${o[1].toFixed(1)})"><path class="is-ico" d="${ISO_ICONS[name]}" vector-effect="non-scaling-stroke"/></g>`;
+}
+function isoShape(n, b) {
+  const k = ISO_KINDS[n.kind || 'service'], icon = n.icon || k.icon, cx = b.x + b.w / 2, cy = b.y + b.d / 2, s = Math.min(b.w, b.d);
+  if (k.shape === 'puck') { const c = isoCyl(cx, cy, s / 2, b.z, 14); return { svg: c.svg + isoIcon(icon, cx, cy, b.z + 14, s * .52), pts: c.pts, top: b.z + 14 }; }
+  if (k.shape === 'stack') {
+    let svg = '', pts = [];
+    for (let i = 0; i < 3; i++) { const o = isoBox({ ...b, z: b.z + i * 10, h: 7 }); svg += o.svg; pts = pts.concat(o.pts); }
+    return { svg: svg + isoIcon(icon, cx, cy, b.z + 27, s * .56), pts, top: b.z + 27 };
+  }
+  const h = k.shape === 'thin' ? 7 : 16, o = isoBox({ ...b, h });
+  return { svg: o.svg + isoIcon(icon, cx, cy, b.z + h, s * .56), pts: o.pts, top: b.z + h };
+}
+function isoCheck(s) {
+  const zones = new Set(s.zones.map(z => z.id));
+  s.zones.forEach(z => { if (z.in && !zones.has(z.in)) throw new Error(`iso "${s.title}": zone "${z.id}" is in "${z.in}", which is not a zone.`); });
+  s.nodes.forEach(n => {
+    if (!zones.has(n.zone)) throw new Error(`iso "${s.title}": node "${n.id}" has zone "${n.zone}", which is not a zone.`);
+    if (n.kind && !ISO_KINDS[n.kind]) throw new Error(`iso "${s.title}": node "${n.id}" has kind "${n.kind}". Use ${Object.keys(ISO_KINDS).join(', ')}.`);
+    if (n.icon && !ISO_ICONS[n.icon]) throw new Error(`iso "${s.title}": node "${n.id}" has icon "${n.icon}". Use one of: ${Object.keys(ISO_ICONS).join(', ')}.`);
+  });
+  const ids = new Set(s.nodes.map(n => n.id));
+  s.edges.forEach(e => { if (!ids.has(e.from) || !ids.has(e.to)) throw new Error(`iso "${s.title}": edge ${e.from} → ${e.to} names a node that does not exist.`); });
+}
+/* layout in world units: x runs along the zones, y is depth, z goes up */
+function isoLayout(s) {
+  isoCheck(s);
+  const { BW, BD, PX, PY, M, MF, TG, ZG } = ISO;
+  const zone = Object.fromEntries(s.zones.map(z => [z.id, z])), kids = id => s.zones.filter(z => z.in === id);
+  const inZone = id => s.nodes.filter(n => n.zone === id), tops = s.zones.filter(z => !z.in);
+  const grid = (n, cols) => { cols = Math.max(1, Math.min(cols || n, n)); return { cols, rows: Math.ceil(n / cols) || 1 }; };
+  const mach = {};
+  tops.forEach(z => {
+    const G = kids(z.id); if (!G.length) return;
+    const L = inZone(z.id), x0 = L.length ? M + PX - 4 : M, gr = G.map(t => grid(inZone(t.id).length, t.cols || 4));
+    const tw = Math.max(...gr.map(q => (q.cols - 1) * PX + BW + 28));
+    let y = M; const groups = G.map((t, i) => { const d = (gr[i].rows - 1) * PY + BD + 28, r = { z: t, x: x0, y, w: tw, d, cols: gr[i].cols }; y += d + TG; return r; });
+    mach[z.id] = { groups, L, w: x0 + tw + M, d: y - TG + MF };
+  });
+  const D = Math.max(0, ...Object.values(mach).map(m => m.d));
+  const blocks = [], plats = [], labels = [], area = {};
+  let cx = 0;
+  tops.forEach(z => {
+    const m = mach[z.id];
+    if (m) {
+      const X = cx, Y = (D - m.d) / 2;
+      area[z.id] = { x: X, y: Y, w: m.w, d: m.d, machine: true };
+      plats.push({ x: X, y: Y, z: 0, w: m.w, d: m.d, h: 16, tone: z.tone || 'n', cls: 'is-plat' });
+      labels.push({ t: z.title, at: [X + 10, Y + 16, 16], along: 'y' });
+      m.groups.forEach(g => {
+        plats.push({ x: X + g.x, y: Y + g.y, z: 16, w: g.w, d: g.d, h: 8, tone: g.z.tone || 'n', cls: 'is-tray' });
+        labels.push({ t: g.z.title, at: [X + g.x + 34, Y + g.y + g.d + 24, 16] });
+        area[g.z.id] = { x: X + g.x, y: Y + g.y, w: g.w, d: g.d };
+        inZone(g.z.id).forEach((n, i) => blocks.push({ n, tone: g.z.tone || 'n', x: X + g.x + 14 + (i % g.cols) * PX, y: Y + g.y + 14 + Math.floor(i / g.cols) * PY, z: 24 }));
+      });
+      m.L.forEach((n, i) => blocks.push({ n, tone: z.tone || 'n', x: X + M, y: Y + (i + .5) * m.d / m.L.length - BD / 2, z: 16 }));
+      cx += m.w + ZG;
+    } else {
+      const N = inZone(z.id), g = grid(N.length, z.cols || 1), Dz = Math.max(D, g.rows * PY);
+      area[z.id] = { x: cx, y: 0, w: (g.cols - 1) * PX + BW, d: Dz };
+      const yAt = r => (r + .5) * Dz / g.rows - BD / 2;
+      N.forEach((n, i) => blocks.push({ n, tone: z.tone || 'n', x: cx + (i % g.cols) * PX, y: yAt(Math.floor(i / g.cols)), z: 0 }));
+      labels.push({ t: z.title, at: [cx - 24, yAt(0) + 4, 0], along: 'y' });
+      cx += area[z.id].w + ZG;
+    }
+  });
+  blocks.forEach(b => { b.w = BW; b.d = BD; });
+  /* drawn links: inside one machine they only light up; to a block in a group they stop at the machine's edge */
+  const topOf = id => { let z = zone[id]; while (z.in) z = zone[z.in]; return z.id; };
+  const B = Object.fromEntries(blocks.map(b => [b.n.id, b])), order = Object.fromEntries(tops.map((z, i) => [z.id, i]));
+  const base = b => [b.x + BW / 2, b.y + BD / 2, b.z], links = {};
+  s.edges.forEach(e => {
+    const a = B[e.from], b = B[e.to], ta = topOf(a.n.zone), tb = topOf(b.n.zone);
+    if (ta === tb && area[ta].machine) return;
+    /* the line meets the machine's edge level with the other block, kept within the block's group */
+    const end = (p, tp, q, tq) => { if (!zone[p.n.zone].in) return base(p); const R = area[tp], G = area[p.n.zone], qy = base(q)[1];
+      return [order[tq] > order[tp] ? R.x + R.w - 6 : R.x + 6, Math.max(G.y + 24, Math.min(G.y + G.d - 24, qy)), 0]; };
+    const pa = end(a, ta, b, tb), pb = end(b, tb, a, ta), key = [...pa, ...pb].map(v => Math.round(v)).join(',');
+    const L = links[key] ||= { a: pa, b: pb, ids: new Set(), dash: true };
+    L.ids.add(e.from); L.ids.add(e.to); if (!a.n.dashed && !b.n.dashed) L.dash = false;
+  });
+  return { blocks, plats, labels, links: Object.values(links) };
+}
+
+PANEL_TYPES.iso = {
+  items: s => s.nodes.map(n => ({ title: n.title, text: `${n.title} ${n.sub || ''} ${n.what || ''}` })),
+  html(s) {
+    const L = isoLayout(s), ix = Object.fromEntries(s.nodes.map((n, i) => [n.id, i])), zt = Object.fromEntries(s.zones.map(z => [z.id, z.title]));
+    const depth = b => isoP(b.x + b.w / 2, b.y + b.d / 2, 0)[1];
+    const links = L.links.map(l => { const a = isoP(...l.a), b = isoP(...l.b);
+      return `<path class="is-lk${l.dash ? ' dash' : ''}" data-ids="${[...l.ids].join(' ')}" d="M${a[0].toFixed(1)},${a[1].toFixed(1)}L${b[0].toFixed(1)},${b[1].toFixed(1)}"/>`; }).join('');
+    const plats = L.plats.map(p => `<g class="${p.cls} tone-${p.tone}">${isoBox(p).svg}</g>`).join('');
+    const blocks = [...L.blocks].sort((a, b) => depth(a) - depth(b)).map(b => {
+      const n = b.n, sh = isoShape(n, b), hull = isoHull(sh.pts), top = Math.min(...hull.map(q => q[1])), c = isoP(b.x + b.w / 2, b.y + b.d / 2, sh.top);
+      const label = `${n.title}${n.sub ? ', ' + n.sub : ''} · ${ISO_KIND_T[n.kind || 'service']()} · ${zt[n.zone]}${n.dashed ? ' · ' + T.isoOnDemand : ''}`;
+      return `<g class="dv-item is-b tone-${b.tone}${n.dashed ? ' is-dash' : ''}" data-i="${ix[n.id]}" data-id="${esc(n.id)}" data-cx="${c[0].toFixed(1)}" data-cy="${c[1].toFixed(1)}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(label)}"><g class="is-lift">${sh.svg}<polygon class="is-ring" points="${isoPts(hull)}"/><g class="is-card"><rect class="is-cd" rx="6"/><text class="is-ct" x="${c[0].toFixed(1)}" data-y="${(top + 10).toFixed(1)}">${esc(n.title)}</text></g></g></g>`;
+    }).join('');
+    const labels = L.labels.map(l => { const p = isoP(...l.at), m = l.along === 'y' ? [...ISO.AY, -ISO.AX[0], -ISO.AX[1]] : [...ISO.AX, ...ISO.AY];
+      return `<g transform="matrix(${m.join(' ')} ${p[0].toFixed(1)} ${p[1].toFixed(1)})"><text class="is-zl">${esc(l.t)}</text></g>`; }).join('');
+    /* legend: coloured zones, dashed blocks, and the shapes in use */
+    const kinds = Object.keys(ISO_KINDS).filter(k => s.nodes.some(n => (n.kind || 'service') === k)), sw = t => `<i class="is-sw tone-${t}" aria-hidden="true"></i>`;
+    const leg = [...s.zones.filter(z => z.tone && z.tone !== 'n').map(z => `<span>${sw(z.tone)}${esc(z.title)}</span>`),
+      ...(s.nodes.some(n => n.dashed) ? [`<span><i class="is-sw dash" aria-hidden="true"></i>${T.isoOnDemand}</span>`] : []),
+      ...(kinds.length > 1 ? kinds.map(k => `<span class="is-k"><svg class="is-kg" viewBox="0 0 18 18" aria-hidden="true">${ISO_KG[k]}</svg>${ISO_KIND_T[k]()}</span>`) : [])].join('');
+    const groups = s.zones.filter(z => s.nodes.some(n => n.zone === z.id));
+    const list = groups.map(z => `<h5>${sw(z.tone || 'n')}${esc(z.title)}</h5><ul>${s.nodes.filter(n => n.zone === z.id).map(n => `<li>${dvBtn(ix[n.id], `${n.title}${n.dashed ? ' (' + T.isoOnDemand + ')' : ''}`, n.dashed ? 'dash' : '')}${esc(n.title)}</button></li>`).join('')}</ul>`).join('');
+    return `${leg ? `<div class="is-leg">${leg}</div>` : ''}<svg class="iso" role="group" aria-label="${esc(s.title)}"><g class="is-links">${links}</g><g aria-hidden="true">${plats}</g><g>${blocks}</g><g aria-hidden="true">${labels}</g></svg><div class="is-list">${list}</div>`;
+  },
+  detail(s, i) {
+    const n = s.nodes[i], ix = Object.fromEntries(s.nodes.map((m, j) => [m.id, j])), byId = Object.fromEntries(s.nodes.map(m => [m.id, m]));
+    const zt = s.zones.find(z => z.id === n.zone).title;
+    const from = s.edges.filter(e => e.to === n.id), to = s.edges.filter(e => e.from === n.id);
+    const li = (e, o) => `<li><button type="button" data-go="${ix[o]}">${esc(byId[o].title)}</button>${e.text ? `: ${esc(e.text)}` : ''}</li>`;
+    return { k: `${zt} · ${ISO_KIND_T[n.kind || 'service']()}${n.dashed ? ' · ' + T.isoOnDemand : ''}`, t: n.title, ts: n.sub,
+      body: `<p>${esc(n.what || '')}</p>${(n.fields || []).length ? `<dl class="pn-f">${n.fields.map(([t, d]) => `<div><dt>${esc(t)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl>` : ''}${from.length ? `<h5 class="pn-ct">${T.receivesFrom}</h5><ul class="pn-c">${from.map(e => li(e, e.from)).join('')}</ul>` : ''}${to.length ? `<h5 class="pn-ct">${T.goesTo}</h5><ul class="pn-c">${to.map(e => li(e, e.to)).join('')}</ul>` : ''}` };
+  },
+  /* text keeps a readable size on screen whatever the scale of the drawing; cards are sized after their text */
+  mount(root, s) {
+    const svg = $('.iso', root); let vb = null;
+    const text = k => {
+      $$('.is-zl', svg).forEach(t => { t.style.fontSize = 13 * k + 'px'; });
+      $$('.is-card', svg).forEach(c => {
+        const t = $('.is-ct', c), r = $('.is-cd', c), fs = 14.5 * k, px = 8 * k, h = fs * 1.75, x = +t.getAttribute('x'), y = +t.dataset.y;
+        t.style.fontSize = fs + 'px'; const w = t.getComputedTextLength();
+        t.setAttribute('y', (y - h / 2 + fs * .36).toFixed(1));
+        r.setAttribute('x', (x - w / 2 - px).toFixed(1)); r.setAttribute('y', (y - h).toFixed(1)); r.setAttribute('width', (w + 2 * px).toFixed(1)); r.setAttribute('height', h.toFixed(1));
+      });
+    };
+    const fit = first => {
+      if (!svg.isConnected) return;
+      if (first || !vb) { text(1.45); const b = svg.getBBox(), p = 24; vb = [b.x - p, b.y - p, b.width + 2 * p, b.height + 2 * p]; svg.setAttribute('viewBox', vb.map(v => v.toFixed(1)).join(' ')); }
+      const w = svg.getBoundingClientRect().width, narrow = root.clientWidth <= 600;
+      if (w) text(Math.min(1.45, Math.max(1, vb[2] / w)));
+      $$('.is-b', svg).forEach(g => g.setAttribute('tabindex', narrow ? '-1' : '0'));
+      svg.setAttribute('aria-hidden', String(narrow));
+    };
+    fit(true); document.fonts?.ready.then(() => fit(true));
+    const ro = new ResizeObserver(() => { if (!root.isConnected) { ro.disconnect(); return; } fit(false); }); ro.observe(root);
+    /* keyboard: Enter and Space select, arrows move to the nearest block in that direction */
+    svg.addEventListener('keydown', e => {
+      const g = e.target.closest('.is-b'); if (!g) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); return; }
+      const d = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key]; if (!d) return;
+      e.preventDefault(); let best = null, bs = Infinity;
+      $$('.is-b', svg).forEach(o => { if (o === g) return; const dx = o.dataset.cx - g.dataset.cx, dy = o.dataset.cy - g.dataset.cy, along = dx * d[0] + dy * d[1]; if (along <= 4) return;
+        const sc = along + Math.abs(dx * d[1] - dy * d[0]) * 2.2; if (sc < bs) { bs = sc; best = o; } });
+      best?.focus();
+    });
+  },
+  /* selecting a block lights it, its neighbours and the links it uses */
+  onOpen(root, s, i) {
+    const svg = $('.iso', root), id = i === null ? null : s.nodes[i].id, near = new Set(id ? [id] : []);
+    s.edges.forEach(e => { if (e.from === id) near.add(e.to); if (e.to === id) near.add(e.from); });
+    svg.classList.toggle('has-hl', !!id);
+    $$('.is-b', svg).forEach(g => g.classList.toggle('is-on', near.has(g.dataset.id)));
+    $$('.is-lk', svg).forEach(l => l.classList.toggle('is-on', !!id && l.dataset.ids.split(' ').includes(id)));
+  }
+};
+
 const diagramItems = spec => PANEL_TYPES[spec.type] ? PANEL_TYPES[spec.type].items(spec) : spec.nodes.map(n => ({ title: n.title, text: `${n.title} ${n.sub || ''} ${n.what}` }));
 
 function createPanelDiagram(host, spec) {
   const type = PANEL_TYPES[spec.type];
-  if (!type) throw new Error(`Unknown diagram type "${spec.type}". Use sequence, timeline, compare, or omit type for a node diagram.`);
+  if (!type) throw new Error(`Unknown diagram type "${spec.type}". Use sequence, timeline, compare, iso, or omit type for a node diagram.`);
   host.innerHTML = `<div class="dv dv-${spec.type}" role="group" aria-label="${esc(spec.title)}"><div class="dv-art">${type.html(spec)}</div><aside class="dv-pn" hidden aria-label="${T.details}"></aside><div class="dg-foot"><span>${T.selectForDetails}</span><span class="dg-hint">${T.escCloses}</span></div></div>`;
   const root = host.firstElementChild, pn = $('.dv-pn', root), items = () => $$('.dv-item', root);
+  const shown = b => b.getClientRects().length > 0 && b.getAttribute('tabindex') !== '-1';
   let sel = null;
   function open(i, focus = true) {
     if (i === null || i === sel) {
       const was = sel; sel = null; pn.hidden = true; pn.innerHTML = '';
       items().forEach(b => b.setAttribute('aria-pressed', 'false'));
-      if (was !== null && focus) items().find(b => +b.dataset.i === was && b.offsetParent)?.focus();
+      type.onOpen?.(root, spec, null);
+      if (was !== null && focus) items().find(b => +b.dataset.i === was && shown(b))?.focus();
       return;
     }
     const d = type.detail(spec, i); sel = i;
-    pn.innerHTML = `<div class="pn-h"><div><p class="pn-kind">${esc(d.k)}</p><h4 class="pn-t" tabindex="-1">${esc(d.t)}</h4></div><button type="button" class="pn-x" aria-label="${T.closeDetails}">${ICON.x}</button></div><div class="pn-body">${d.body}</div>`;
+    pn.innerHTML = `<div class="pn-h"><div><p class="pn-kind">${esc(d.k)}</p><h4 class="pn-t" tabindex="-1">${esc(d.t)}${d.ts ? ` <span class="pn-ts">${esc(d.ts)}</span>` : ''}</h4></div><button type="button" class="pn-x" aria-label="${T.closeDetails}">${ICON.x}</button></div><div class="pn-body">${d.body}</div>`;
     pn.hidden = false; items().forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+    type.onOpen?.(root, spec, i);
     if (focus) $('.pn-t', pn).focus({ preventScroll: true });
     announce(`${T.details}: ${d.t}`);
   }
-  root.addEventListener('click', e => { if (e.target.closest('.pn-x')) { open(null); return; } const b = e.target.closest('.dv-item'); if (b) open(+b.dataset.i); });
+  root.addEventListener('click', e => { if (e.target.closest('.pn-x')) { open(null); return; } const go = e.target.closest('[data-go]'); if (go) { open(+go.dataset.go); return; } const b = e.target.closest('.dv-item'); if (b) open(+b.dataset.i); });
+  type.mount?.(root, spec);
   root.addEventListener('keydown', e => { if (e.key === 'Escape' && sel !== null) { e.preventDefault(); e.stopPropagation(); open(null); } });
 }
 

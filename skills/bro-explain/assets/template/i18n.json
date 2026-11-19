@@ -58,14 +58,19 @@
     "step": "Step",
     "of": "of",
     "criterion": "Criterion",
-"recommended": "Recommended",
+    "recommended": "Recommended",
     "inProgress": "in progress",
     "whenToChoose": "When to choose it",
     "strong": "Strong point",
     "soso": "So-so",
     "weak": "Weak point",
     "selectForDetails": "Select an item to see the details",
-    "escCloses": "Esc closes the panel"
+    "escCloses": "Esc closes the panel",
+    "isoService": "service",
+    "isoData": "data and disks",
+    "isoNetwork": "network",
+    "isoDevice": "device",
+    "isoOnDemand": "on demand"
   },
   "it": {
     "skipToContent": "Vai al contenuto",
@@ -126,13 +131,18 @@
     "step": "Passo",
     "of": "di",
     "criterion": "Criterio",
-"recommended": "Consigliata",
+    "recommended": "Consigliata",
     "inProgress": "in corso",
     "whenToChoose": "Quando sceglierla",
     "strong": "Punto forte",
     "soso": "Così così",
     "weak": "Punto debole",
     "selectForDetails": "Seleziona un elemento per i dettagli",
-    "escCloses": "Esc chiude il pannello"
+    "escCloses": "Esc chiude il pannello",
+    "isoService": "servizio",
+    "isoData": "dati e dischi",
+    "isoNetwork": "rete",
+    "isoDevice": "dispositivo",
+    "isoOnDemand": "a richiesta"
   }
 }
